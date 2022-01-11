@@ -536,6 +536,11 @@ section .title::after{
   color: crimson;
   background: none;
 }
+
+.button-area span {
+    padding-left: 7px;
+    margin-top: auto;
+}
 /* footer section styling */
 footer{
     background: #111;
