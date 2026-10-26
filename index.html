@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 
 <head>
     <meta charset="UTF-8">
@@ -8,42 +8,48 @@
     <meta name="theme-color" content="#ffffff">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://esm.sh" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #ffffff;
-            --surface: #fafafa;
+            --sidebar: #f8f8f8;
             --hover: rgba(0, 0, 0, .04);
-            --active: rgba(0, 0, 0, .065);
-            --border: rgba(0, 0, 0, .07);
-            --text: #111111;
-            --text-2: #6e6e6e;
-            --text-3: #a8a8a8;
+            --active: rgba(0, 0, 0, .06);
+            --border: rgba(0, 0, 0, .08);
+            --border-strong: rgba(0, 0, 0, .14);
+            --text: #171717;
+            --text-2: #5e5e5e;
+            --text-3: #8a8a8a;
+            --placeholder: #b0b0b0;
             --inverse: #ffffff;
-            --shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 24px rgba(0, 0, 0, .08);
-            --glass: rgba(255, 255, 255, .78);
+            --shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 8px 24px rgba(0, 0, 0, .1);
+            --selection: rgba(0, 0, 0, .1);
+            --elevated: #ffffff;
 
             --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-            --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+            --ease-icon: cubic-bezier(0.2, 0, 0, 1);
 
-            --sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-            --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+            --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
             color-scheme: light;
         }
 
         :root[data-theme="dark"] {
-            --bg: #0b0b0c;
-            --surface: #101012;
-            --hover: rgba(255, 255, 255, .045);
+            --bg: #0c0c0d;
+            --sidebar: #121214;
+            --hover: rgba(255, 255, 255, .05);
             --active: rgba(255, 255, 255, .08);
-            --border: rgba(255, 255, 255, .075);
-            --text: #ededed;
-            --text-2: #8d8d8d;
-            --text-3: #565656;
-            --inverse: #0b0b0c;
-            --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .5);
-            --glass: rgba(11, 11, 12, .72);
+            --border: rgba(255, 255, 255, .08);
+            --border-strong: rgba(255, 255, 255, .16);
+            --text: #ececec;
+            --text-2: #a3a3a3;
+            --text-3: #7c7c7c;
+            --placeholder: #545454;
+            --inverse: #0c0c0d;
+            --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .55);
+            --selection: rgba(255, 255, 255, .16);
+            --elevated: #1b1b1e;
             color-scheme: dark;
         }
 
@@ -53,7 +59,9 @@
 
         body {
             font-family: var(--sans);
-            font-size: 14px;
+            font-size: .875rem;
+            line-height: 1.5;
+            font-feature-settings: 'cv11';
             background: var(--bg);
             color: var(--text);
             -webkit-font-smoothing: antialiased;
@@ -61,146 +69,181 @@
             overflow: hidden;
         }
 
+        ::selection { background: var(--selection); }
+
         button, input, textarea { font: inherit; color: inherit; background: none; border: none; outline: none; }
         button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
-        svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-        :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 6px; }
+        svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        /* focus ring: a transparent outline waits on every control, then tightens in on keyboard focus */
+        button, a, input, [tabindex] { outline: 2px solid transparent; outline-offset: 5px; }
+        :focus-visible { outline-color: var(--text); outline-offset: 2px; }
+        .title-input:focus-visible, .ProseMirror:focus-visible, .search input:focus-visible, .menu-input:focus-visible, #linkInput:focus-visible, .editor:focus-visible { outline-color: transparent; }
 
-        /* pressables: instant feedback on press */
-        .press { transition: transform 160ms var(--ease-out), background-color 150ms ease, color 150ms ease; }
-        .press:active { transform: scale(0.97); }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+        .skip {
+            position: fixed;
+            top: 12px;
+            inset-inline-start: 12px;
+            z-index: 20;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: var(--text);
+            color: var(--inverse);
+            text-decoration: none;
+            transform: translateY(-200%);
+        }
+
+        .skip:focus-visible { transform: none; }
+
+        .press { transition-property: scale, background-color, color, opacity, outline-offset, outline-color; transition-duration: 150ms; transition-timing-function: ease-out; }
 
         /* ---------- layout ---------- */
         .app {
             display: grid;
-            grid-template-columns: 220px 320px 1fr;
+            grid-template-columns: 208px 296px minmax(0, 1fr);
             height: 100dvh;
         }
 
-        .pane-nav, .pane-list { background: var(--surface); border-right: 1px solid var(--border); min-height: 0; display: flex; flex-direction: column; }
+        .app.sidebar-hidden { grid-template-columns: minmax(0, 1fr); }
+        .app.sidebar-hidden .pane-nav, .app.sidebar-hidden .pane-list { display: none; }
+
+        .pane-nav, .pane-list { min-height: 0; display: flex; flex-direction: column; border-inline-end: 1px solid var(--border); }
+        .pane-nav { background: var(--sidebar); }
+        .pane-list { background: var(--bg); }
+
+        /* every pane header shares one 52px row so their contents line up */
+        .pane-head { height: 52px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 16px; }
 
         /* ---------- nav pane ---------- */
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 22px 20px 18px;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-        }
+        .brand { gap: 10px; font-size: .875rem; font-weight: 600; letter-spacing: -0.006em; }
 
         .brand-mark {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 6px;
             background: var(--text);
             color: var(--inverse);
             display: grid;
             place-items: center;
-            font-family: var(--serif);
-            font-size: 16px;
-            font-style: italic;
-            font-weight: 400;
         }
 
-        .nav { padding: 4px 10px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; flex: 1; }
+        .brand-mark svg { width: 12px; height: 12px; stroke-width: 2; }
+
+        .nav { padding: 4px 8px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; overscroll-behavior: contain; flex: 1; }
 
         .nav-label {
-            font-family: var(--mono);
-            font-size: 10.5px;
-            text-transform: uppercase;
-            letter-spacing: .08em;
+            font-size: .75rem;
+            font-weight: 500;
             color: var(--text-3);
-            padding: 18px 10px 6px;
+            padding: 20px 8px 6px;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 7px 10px;
-            border-radius: 8px;
+            height: 32px;
+            padding: 0 8px;
+            border-radius: 7px;
             color: var(--text-2);
-            text-align: left;
+            text-align: start;
             width: 100%;
         }
 
+        .nav-item svg { color: var(--text-3); }
         .nav-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .nav-item .count { flex: none; font-family: var(--mono); font-size: 11px; color: var(--text-3); }
-        .nav-item.active { background: var(--active); color: var(--text); }
+        .nav-item .count { flex: none; font-size: .75rem; font-style: normal; color: var(--text-3); font-variant-numeric: tabular-nums; }
+        .nav-item[aria-current="true"] { background: var(--active); color: var(--text); font-weight: 500; }
+        .nav-item[aria-current="true"] svg { color: var(--text); }
 
-        .nav-foot { display: flex; gap: 2px; padding: 12px 10px 16px; border-top: 1px solid var(--border); }
+        .nav-foot { display: flex; gap: 2px; padding: 8px 8px 12px; }
 
         .icon-btn {
+            position: relative;
             width: 32px;
             height: 32px;
             display: grid;
             place-items: center;
-            border-radius: 8px;
+            border-radius: 7px;
             color: var(--text-2);
         }
 
         .icon-btn.on { color: var(--text); }
         .icon-btn.on svg { fill: currentColor; }
+        .icon-btn:disabled { color: var(--placeholder); cursor: default; }
+        .divider { width: 1px; height: 16px; background: var(--border); margin: 0 6px; flex: none; }
+
+        /* two icons in one button, cross-faded on state change */
+        .swap svg { grid-area: 1 / 1; transition-property: opacity, scale, filter; transition-duration: 300ms; transition-timing-function: var(--ease-icon); }
+        .swap svg:last-child, .swap.alt svg:first-child { opacity: 0; scale: .25; filter: blur(4px); }
+        .swap.alt svg:last-child { opacity: 1; scale: 1; filter: blur(0); }
 
         /* ---------- list pane ---------- */
-        .list-head { padding: 20px 16px 12px; display: flex; flex-direction: column; gap: 12px; }
-        .list-title-row { display: flex; align-items: center; gap: 8px; }
-
         .list-title {
             flex: 1;
-            font-family: var(--serif);
-            font-size: 26px;
-            font-weight: 400;
-            letter-spacing: -0.01em;
-            line-height: 1.1;
+            min-width: 0;
+            font-size: .9375rem;
+            font-weight: 600;
+            letter-spacing: -0.011em;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .list-count { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+        .list-title .n { margin-inline-start: 6px; font-weight: 400; color: var(--text-3); font-variant-numeric: tabular-nums; }
 
         .new-btn {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             height: 30px;
-            padding: 0 12px 0 10px;
-            border-radius: 8px;
+            padding-inline: 8px 11px;
+            border-radius: 7px;
             background: var(--text);
             color: var(--inverse);
             font-weight: 500;
-            font-size: 13px;
+            font-size: .8125rem;
+            white-space: nowrap;
         }
+
+        .list-tools { display: none; }
+
+        /* list pane shares one text edge (18px): title, search icon and note titles line up */
+        .pane-list .pane-head { padding-inline-start: 18px; }
+        .search-wrap { padding: 0 8px 8px; display: flex; flex-direction: column; gap: 8px; }
 
         .search {
             display: flex;
             align-items: center;
             gap: 8px;
-            height: 34px;
-            padding: 0 10px;
-            border-radius: 9px;
-            background: var(--hover);
+            height: 32px;
+            padding: 0 8px 0 9px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
             color: var(--text-3);
-            transition: background-color 150ms ease, box-shadow 150ms ease;
+            transition-property: border-color, box-shadow;
+            transition-duration: 150ms;
         }
 
-        .search:focus-within { background: var(--bg); box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(0, 0, 0, .04); }
-        .search input { flex: 1; min-width: 0; color: var(--text); }
+        .search:focus-within { border-color: var(--border-strong); box-shadow: 0 0 0 3px var(--hover); color: var(--text); }
+        .search:focus-within svg { scale: 1.08; }
+        .search input { flex: 1; min-width: 0; color: var(--text); font-size: .8125rem; }
         .search input::placeholder { color: var(--text-3); }
         .search input::-webkit-search-cancel-button { display: none; }
 
         kbd {
-            font-family: var(--mono);
-            font-size: 10.5px;
+            font-family: var(--sans);
+            font-size: .6875rem;
+            font-weight: 500;
             color: var(--text-3);
-            border: 1px solid var(--border);
-            border-radius: 5px;
+            background: var(--hover);
+            border-radius: 4px;
             padding: 1px 5px;
+            white-space: nowrap;
         }
 
-        .filter-row { display: none; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+        .filter-row { display: none; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -8px; padding: 0 8px; }
         .filter-row::-webkit-scrollbar { display: none; }
 
         .filter-row button {
@@ -209,239 +252,245 @@
             padding: 0 11px;
             border-radius: 999px;
             color: var(--text-2);
-            font-size: 13px;
+            font-size: .8125rem;
             border: 1px solid var(--border);
         }
 
-        .filter-row button.active { background: var(--text); border-color: var(--text); color: var(--inverse); }
+        .filter-row button[aria-current="true"] { background: var(--text); border-color: var(--text); color: var(--inverse); }
 
-        .note-list { list-style: none; overflow-y: auto; flex: 1; padding: 4px 8px 24px; }
+        .note-list { list-style: none; overflow-y: auto; overscroll-behavior: contain; flex: 1; padding: 4px 8px 24px; display: flex; flex-direction: column; gap: 4px; }
 
         .note-item {
-            padding: 12px 12px 13px;
-            border-radius: 10px;
-            cursor: pointer;
-            position: relative;
+            display: block;
+            width: 100%;
+            text-align: start;
+            padding: 10px 10px 11px;
+            border-radius: 8px;
         }
 
-        .note-item + .note-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 12px;
-            right: 12px;
-            border-top: 1px solid var(--border);
-        }
+        .note-item[aria-current="true"] { background: var(--active); }
 
-        .note-item.active::before, .note-item.active + .note-item::before { border-color: transparent; }
-        .note-item.active { background: var(--active); }
-
-        .note-item .t {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-weight: 500;
-            letter-spacing: -0.005em;
-        }
-
+        .note-item .t { display: flex; align-items: center; gap: 6px; font-weight: 500; font-size: .875rem; letter-spacing: -0.006em; }
         .note-item .t span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .note-item .t svg { width: 12px; height: 12px; fill: currentColor; stroke: none; color: var(--text-2); }
-        .note-item .t.untitled span { color: var(--text-3); }
+        .note-item .t.untitled span { color: var(--text-3); font-weight: 400; }
 
         .note-item .s {
             color: var(--text-2);
-            font-size: 13px;
-            margin-top: 3px;
+            font-size: .8125rem;
+            margin-top: 2px;
             line-height: 1.45;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            overflow-wrap: anywhere;
         }
 
-        .note-item .m { display: flex; gap: 8px; margin-top: 7px; font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+        .note-item .m { display: flex; gap: 6px; margin-top: 6px; font-size: .75rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
+        .note-item .m span + span::before { content: '·'; margin-inline-end: 6px; }
 
-        .note-list.stagger .note-item {
-            animation: rise 320ms var(--ease-out) both;
-            animation-delay: calc(var(--i) * 35ms);
-        }
-
-        @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
-
-        .list-empty { padding: 48px 20px; text-align: center; color: var(--text-3); font-size: 13px; line-height: 1.6; }
+        .list-empty { padding: 40px 16px; text-align: center; color: var(--text-3); font-size: .8125rem; line-height: 1.6; text-wrap: balance; }
 
         /* ---------- editor ---------- */
         .editor { position: relative; min-width: 0; display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
 
         .toolbar {
-            position: absolute;
-            inset: 0 0 auto 0;
-            z-index: 2;
+            height: 52px;
+            flex: none;
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 12px 20px;
-            background: var(--glass);
-            -webkit-backdrop-filter: saturate(180%) blur(16px);
-            backdrop-filter: saturate(180%) blur(16px);
-            mask-image: linear-gradient(to bottom, #000 80%, transparent);
+            gap: 2px;
+            padding: 0 12px;
+            min-width: 0;
         }
+
+        /* controls keep their size; only the category chip gives way (and truncates) */
+        .toolbar > * { flex: none; }
+        .toolbar > .cat { flex: 0 1 auto; min-width: 0; }
+        .toolbar > .spacer { flex: 1 1 0; min-width: 4px; }
 
         .back { display: none; }
 
         .cat {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            height: 30px;
-            padding: 0 10px 0 8px;
-            border-radius: 8px;
-            color: var(--text-2);
+            gap: 6px;
+            height: 28px;
+            max-width: 14rem;
+            padding-inline: 8px 8px;
+            margin-inline-start: 6px;
+            border-radius: 999px;
+            border: 1px dashed var(--border-strong);
+            color: var(--text-3);
+            font-size: .8125rem;
+            transition-property: scale, background-color, border-color, color, outline-offset, outline-color;
         }
 
-        .cat svg { width: 14px; height: 14px; color: var(--text-3); }
-        .cat input { width: 120px; font-size: 13px; color: var(--text); }
-        .cat input::placeholder { color: var(--text-3); }
-        .cat:focus-within { background: var(--hover); }
+        .cat span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cat.has-value { border-style: solid; border-color: var(--border); color: var(--text); }
+        .cat svg { width: 13px; height: 13px; color: var(--text-3); }
+        .cat .chev { width: 12px; height: 12px; transition: rotate 200ms var(--ease-out); }
+        .cat[aria-expanded="true"] { border-style: solid; border-color: var(--border-strong); background: var(--hover); }
+        .cat[aria-expanded="true"] .chev { rotate: 180deg; }
+
+        /* ---------- dropdown menu ---------- */
+        .menu {
+            position: fixed;
+            z-index: 9;
+            width: 15rem;
+            padding: 4px;
+            border-radius: 12px;
+            background: var(--elevated);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transform-origin: top left;
+            opacity: 0;
+            visibility: hidden;
+            transition-property: opacity, visibility, scale, translate;
+            transition-duration: 100ms;
+            transition-timing-function: ease-out;
+        }
+
+        .menu.show { opacity: 1; visibility: visible; transition-duration: 160ms; }
+
+        .menu-input {
+            width: 100%;
+            height: 34px;
+            padding: 0 10px;
+            font-size: .8125rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 4px;
+        }
+
+        .menu-input::placeholder { color: var(--text-3); }
+        .menu ul { list-style: none; max-height: 15rem; overflow-y: auto; overscroll-behavior: contain; }
+
+        .menu li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 32px;
+            padding: 0 8px;
+            border-radius: 7px;
+            color: var(--text-2);
+            font-size: .8125rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 80ms ease, color 80ms ease;
+        }
+
+        .menu li span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .menu li svg { width: 14px; height: 14px; color: var(--text-3); }
+        .menu li .tick { opacity: 0; color: var(--text); }
+        .menu li[aria-selected="true"] { background: var(--hover); color: var(--text); }
+        .menu li.chosen .tick { opacity: 1; }
+        .menu li.chosen { color: var(--text); font-weight: 500; }
+        .menu li.sep { height: 1px; padding: 0; margin: 4px 4px; background: var(--border); border-radius: 0; pointer-events: none; }
+        .menu ul { overflow-x: hidden; }
+        .menu li.danger span { color: var(--text-2); }
+        .menu .menu-empty { color: var(--text-3); cursor: default; }
 
         .spacer { flex: 1; }
 
-        .status {
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--text-3);
-            margin-right: 6px;
-            transition: opacity 200ms ease;
-        }
+        .status { font-size: .75rem; color: var(--text-3); margin-inline-end: 8px; white-space: nowrap; }
 
-        .seg {
-            position: relative;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            padding: 3px;
-            border-radius: 9px;
-            background: var(--hover);
-            margin-right: 4px;
-        }
-
-        .seg button { position: relative; z-index: 1; height: 24px; padding: 0 12px; font-size: 12.5px; color: var(--text-2); transition: color 150ms ease; }
-        .seg button[aria-pressed="true"] { color: var(--text); }
-
-        .seg-ind {
-            position: absolute;
-            top: 3px;
-            bottom: 3px;
-            left: 3px;
-            width: calc(50% - 3px);
-            border-radius: 6px;
-            background: var(--bg);
-            box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 0 0 1px var(--border);
-            transition: transform 220ms var(--ease-in-out);
-        }
-
-        .seg[data-mode="read"] .seg-ind { transform: translateX(100%); }
-        .seg.instant .seg-ind, .seg.instant button { transition: none; }
-
-        .page { flex: 1; overflow-y: auto; padding: 96px 32px 120px; }
-        .page-inner { max-width: 680px; margin: 0 auto; }
+        .page { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 40px 40px 40vh; cursor: text; }
+        .page-inner { max-width: 42rem; margin: 0 auto; cursor: auto; }
 
         .title-input {
             width: 100%;
-            font-family: var(--serif);
-            font-size: 44px;
-            line-height: 1.08;
-            letter-spacing: -0.015em;
-            font-weight: 400;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.022em;
             resize: none;
             overflow: hidden;
             display: block;
+            text-wrap: balance;
         }
 
-        .title-input::placeholder { color: var(--text-3); }
+        .title-input::placeholder { color: var(--placeholder); }
 
-        .meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin: 14px 0 32px;
-            font-family: var(--mono);
-            font-size: 11.5px;
-            color: var(--text-3);
-        }
+        .meta { display: flex; gap: 6px; margin: 8px 0 24px; font-size: .8125rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
 
-        .body-input, .preview { font-size: 16px; line-height: 1.75; letter-spacing: -0.003em; }
+        /* ---------- note body (rich editor + fallback textarea) ---------- */
+        .prose, .body-input { font-size: 1rem; line-height: 1.65; letter-spacing: -0.011em; }
 
-        .body-input {
-            width: 100%;
-            min-height: 50vh;
-            resize: none;
-            display: block;
-        }
+        .body-input { width: 100%; min-height: 40vh; resize: none; display: block; }
+        .prose.loading { color: var(--text-3); }
+        .prose.loading > * + * { margin-top: .75em; }
+        .body-input::placeholder { color: var(--placeholder); }
 
-        .body-input::placeholder { color: var(--text-3); }
+        .prose .ProseMirror { outline: none; min-height: 40vh; overflow-wrap: break-word; text-wrap: pretty; caret-color: var(--text); }
+        .prose .ProseMirror > * + * { margin-top: .75em; }
+        .prose p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; color: var(--placeholder); pointer-events: none; }
 
-        /* rendered markdown */
-        .preview { word-wrap: break-word; }
-        .preview > * + * { margin-top: .75em; }
-        .preview h1, .preview h2, .preview h3 { font-weight: 600; letter-spacing: -0.015em; line-height: 1.3; margin-top: 1.6em; }
-        .preview > :first-child { margin-top: 0; }
-        .preview h1 { font-size: 24px; }
-        .preview h2 { font-size: 19px; }
-        .preview h3 { font-size: 16px; }
-        .preview strong { font-weight: 600; }
+        .prose h1, .prose h2, .prose h3 { font-weight: 650; line-height: 1.3; margin-top: 1.75em; text-wrap: balance; }
+        .prose .ProseMirror > :first-child { margin-top: 0; }
+        .prose h1 { font-size: 1.5rem; letter-spacing: -0.019em; }
+        .prose h2 { font-size: 1.25rem; letter-spacing: -0.017em; }
+        .prose h3 { font-size: 1.0625rem; letter-spacing: -0.014em; }
+        .prose h1 + *, .prose h2 + *, .prose h3 + * { margin-top: .5em; }
+        .prose strong { font-weight: 600; }
 
-        .preview a {
-            color: var(--text);
+        .prose a {
+            color: inherit;
             text-decoration: underline;
-            text-decoration-color: var(--text-3);
+            text-decoration-color: var(--border-strong);
             text-underline-offset: 3px;
             text-decoration-thickness: 1px;
             transition: text-decoration-color 150ms ease;
+            cursor: pointer;
         }
 
-        .preview ul, .preview ol { padding-left: 1.3em; }
-        .preview li { padding-left: .2em; }
-        .preview li + li { margin-top: .2em; }
-        .preview li::marker { color: var(--text-3); }
-        .preview li.task { list-style: none; margin-left: -1.3em; padding-left: 0; }
-        .preview li.task label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
-        .preview li.task.done label > span { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--text-3); }
+        .prose ul, .prose ol { padding-inline-start: 1.375em; }
+        .prose li + li { margin-top: .25em; }
+        .prose li > p + * { margin-top: .25em; }
+        .prose li::marker { color: var(--text-3); }
 
-        .check {
+        .prose ul[data-type="taskList"] { list-style: none; padding-inline-start: 0; }
+        .prose ul[data-type="taskList"] > li { display: flex; gap: 10px; align-items: flex-start; }
+        .prose ul[data-type="taskList"] > li > label { flex: none; display: flex; height: 1.65em; align-items: center; user-select: none; }
+        .prose ul[data-type="taskList"] > li > div { flex: 1; min-width: 0; }
+        .prose ul[data-type="taskList"] > li > div { text-decoration: line-through; text-decoration-color: transparent; transition: color 200ms ease, text-decoration-color 200ms ease; }
+        .prose ul[data-type="taskList"] > li[data-checked="true"] > div { color: var(--text-3); text-decoration-color: var(--text-3); }
+        .prose ul[data-type="taskList"] > li ul[data-type="taskList"] { margin-top: .25em; }
+
+        .prose input[type="checkbox"] {
             appearance: none;
-            flex: none;
-            width: 17px;
-            height: 17px;
-            margin-top: 5px;
-            border-radius: 5px;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
             border: 1.5px solid var(--text-3);
             display: grid;
             place-items: center;
             cursor: pointer;
-            transition: background-color 150ms ease, border-color 150ms ease, transform 160ms var(--ease-out);
+            transition-property: background-color, border-color, scale;
+            transition-duration: 150ms;
+            transition-timing-function: ease-out;
         }
 
-        .check:active { transform: scale(0.9); }
-        .check::after {
+        .prose input[type="checkbox"]::after {
             content: '';
-            width: 8px;
-            height: 4px;
+            width: 7px;
+            height: 3.5px;
             border: solid var(--inverse);
             border-width: 0 0 1.75px 1.75px;
-            transform: translateY(-1px) rotate(-45deg) scale(0.6);
-            opacity: 0;
-            transition: opacity 150ms ease, transform 200ms var(--ease-out);
+            transform: translateY(-1px) rotate(-45deg);
+            /* the tick draws itself: short stroke first, then the long one */
+            clip-path: inset(0 100% 0 0);
+            transition: clip-path 100ms ease-out;
         }
 
-        .check:checked { background: var(--text); border-color: var(--text); }
-        .check:checked::after { opacity: 1; transform: translateY(-1px) rotate(-45deg) scale(1); }
+        .prose input[type="checkbox"]:checked { background: var(--text); border-color: var(--text); }
+        .prose input[type="checkbox"]:checked::after { clip-path: inset(0 0 0 0); transition: clip-path 220ms var(--ease-out) 60ms; }
 
-        .preview blockquote { padding-left: 16px; border-left: 2px solid var(--text); color: var(--text-2); font-family: var(--serif); font-size: 20px; line-height: 1.5; font-style: italic; }
-        .preview code { font-family: var(--mono); font-size: .86em; background: var(--hover); padding: 2px 5px; border-radius: 5px; }
-        .preview pre { background: var(--surface); border: 1px solid var(--border); padding: 14px 16px; border-radius: 10px; overflow-x: auto; }
-        .preview pre code { background: none; padding: 0; font-size: 13px; line-height: 1.6; }
-        .preview hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
-        .preview .placeholder { color: var(--text-3); }
+        .prose blockquote { padding-inline-start: 16px; border-inline-start: 2px solid var(--border-strong); color: var(--text-2); }
+        .prose code { font-family: var(--mono); font-size: .875em; background: var(--hover); padding: .15em .35em; border-radius: 4px; letter-spacing: 0; }
+        .prose pre { background: var(--sidebar); border: 1px solid var(--border); padding: 12px 16px; border-radius: 8px; overflow-x: auto; }
+        .prose pre code { background: none; padding: 0; font-size: .8125rem; line-height: 1.6; }
+        .prose hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
 
         .empty {
             flex: 1;
@@ -449,16 +498,16 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
             text-align: center;
             padding: 32px;
         }
 
-        .empty h2 { font-family: var(--serif); font-weight: 400; font-size: 30px; letter-spacing: -0.01em; }
-        .empty p { color: var(--text-2); margin-bottom: 14px; }
+        .empty h2 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.014em; }
+        .empty p { color: var(--text-2); margin-bottom: 16px; text-wrap: balance; }
         .empty p kbd { margin: 0 2px; }
 
-        /* ---------- toast ---------- */
+        /* ---------- toast (live region always present) ---------- */
         .toast {
             position: fixed;
             left: 50%;
@@ -466,85 +515,280 @@
             z-index: 10;
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 10px 10px 10px 16px;
-            border-radius: 12px;
+            gap: 4px;
+            padding: 6px 6px 6px 14px;
+            border-radius: 10px;
             background: var(--text);
             color: var(--inverse);
             box-shadow: var(--shadow);
-            font-size: 13px;
+            font-size: .8125rem;
+            white-space: nowrap;
+            translate: -50% 0;
             opacity: 0;
-            transform: translate(-50%, 12px) scale(0.97);
-            transition: opacity 260ms var(--ease-out), transform 260ms var(--ease-out);
-            pointer-events: none;
+            visibility: hidden;
+            transition-property: opacity, visibility;
+            transition-duration: 150ms;
+            transition-timing-function: ease-out;
         }
 
-        .toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
-        .toast.hide { transition-duration: 160ms; }
+        .toast.show { opacity: 1; visibility: visible; transition-duration: 300ms; }
+        .toast span { margin-inline-end: 8px; }
+        .toast:not(:has(button)) { padding-inline-end: 14px; }
 
         .toast button {
-            height: 26px;
+            height: 28px;
             padding: 0 10px;
-            border-radius: 7px;
-            background: color-mix(in srgb, var(--inverse) 16%, transparent);
+            border-radius: 6px;
             color: var(--inverse);
             font-weight: 500;
-            font-size: 12.5px;
+            font-size: .8125rem;
+        }
+
+        .toast .toast-action { background: color-mix(in srgb, var(--inverse) 16%, transparent); }
+        .toast .toast-close { width: 28px; padding: 0; display: grid; place-items: center; opacity: .7; }
+        .toast :focus-visible { outline-color: var(--inverse); }
+
+        /* ---------- selection format bar ---------- */
+        .fmt {
+            position: fixed;
+            z-index: 8;
+            display: flex;
+            align-items: center;
+            gap: 1px;
+            padding: 4px;
+            border-radius: 10px;
+            background: var(--elevated);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            opacity: 0;
+            visibility: hidden;
+            transition-property: opacity, visibility;
+            transition-duration: 120ms;
+            transition-timing-function: ease-out;
+        }
+
+        .fmt.show { opacity: 1; visibility: visible; }
+
+        .fmt button {
+            width: 30px;
+            height: 30px;
+            display: grid;
+            place-items: center;
+            border-radius: 6px;
+            color: var(--text-2);
+            font-size: .8125rem;
+            font-weight: 600;
+        }
+
+        .fmt button[aria-pressed="true"] { background: var(--active); color: var(--text); }
+        .fmt .divider { height: 18px; margin: 0 3px; }
+        .fmt input { width: 15rem; height: 30px; padding: 0 8px; font-size: .8125rem; color: var(--text); }
+        .fmt input::placeholder { color: var(--text-3); }
+
+        /* ---------- shortcuts dialog ---------- */
+        .keys {
+            margin: auto;
+            width: min(720px, calc(100vw - 32px));
+            max-height: calc(100dvh - 64px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--elevated);
+            color: var(--text);
+            box-shadow: var(--shadow);
+            overscroll-behavior: contain;
+        }
+
+        .keys::backdrop { background: rgba(0, 0, 0, .3); }
+        .keys header { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 4px 24px; }
+        .keys h2 { font-size: .9375rem; font-weight: 600; letter-spacing: -0.011em; }
+        .keys section { display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; padding: 8px 24px 24px; }
+        .keys .group + .group { margin-top: 0; }
+        .keys .col > .group + .group { margin-top: 24px; }
+        .keys h3 { font-size: .75rem; font-weight: 500; color: var(--text-3); margin-bottom: 10px; }
+        .keys dl { display: grid; grid-template-columns: 1fr auto; row-gap: 10px; column-gap: 16px; align-items: center; }
+        .keys dt { color: var(--text-2); font-size: .8125rem; }
+        .keys dd { display: flex; gap: 3px; align-items: center; justify-content: flex-end; color: var(--text-3); font-size: .75rem; }
+        .keys kbd { font-size: .6875rem; min-width: 20px; text-align: center; padding: 2px 5px; color: var(--text-2); }
+
+        @media (max-width: 640px) {
+            .keys section { grid-template-columns: 1fr; }
+            .keys .col + .col { margin-top: 24px; }
+        }
+
+        /* ---------- motion (opt-in) ---------- */
+        @media (prefers-reduced-motion: no-preference) {
+            .press:not(:disabled):active { scale: .96; }
+            .prose input[type="checkbox"]:active { scale: .9; }
+
+            .toast { transition-property: opacity, visibility, translate, filter; translate: -50% 12px; filter: blur(4px); }
+            .toast.show { translate: -50% 0; filter: blur(0); }
+
+            .note-list.intro li:not(.hl) { animation: enter 300ms ease-out both; animation-delay: calc(var(--i) * 60ms); }
+            .note-list li.new { animation: enter 300ms var(--ease-out) both; }
+            @keyframes enter { from { opacity: 0; translate: 0 8px; filter: blur(4px); } }
+
+            /* focus ring tightens in */
+            button, a, input, [tabindex] { transition-property: outline-offset, outline-color, scale, background-color, color, opacity, border-color; transition-duration: 150ms; transition-timing-function: ease-out; }
+
+            .note-item:active { scale: .985; }
+
+            /* popovers grow out of where they were opened */
+            .menu { scale: .96; translate: 0 -4px; }
+            .menu.show { scale: 1; translate: 0 0; }
+            .fmt { transform-origin: bottom center; scale: .96; translate: 0 4px; transition-property: opacity, visibility, scale, translate; }
+            .fmt.show { scale: 1; translate: 0 0; transition-duration: 150ms; }
+
+            .keys, .keys::backdrop { opacity: 0; transition: opacity 200ms ease-out, scale 200ms var(--ease-out), overlay 200ms allow-discrete, display 200ms allow-discrete; }
+            .keys { scale: .96; }
+            .keys[open], .keys[open]::backdrop { opacity: 1; }
+            .keys[open] { scale: 1; }
+            @starting-style { .keys[open], .keys[open]::backdrop { opacity: 0; } .keys[open] { scale: .96; } }
+
+            /* starring is a small celebration */
+            .icon-btn.pop svg { animation: pop 420ms var(--ease-icon); }
+            .icon-btn.pop::after {
+                content: '';
+                position: absolute;
+                inset: 5px;
+                border-radius: 50%;
+                border: 1.5px solid currentColor;
+                pointer-events: none;
+                animation: ring 480ms ease-out forwards;
+            }
+            @keyframes pop { 0% { scale: 1; } 30% { scale: .78; } 65% { scale: 1.22; } 100% { scale: 1; } }
+            @keyframes ring { from { scale: .5; opacity: .5; } to { scale: 1.45; opacity: 0; } }
+
+            .status.flash { animation: saved 400ms var(--ease-out); }
+            @keyframes saved { from { opacity: 0; translate: 0 3px; filter: blur(3px); } }
+
+            .theme-btn svg { transition-property: opacity, scale, filter, rotate; }
+            .theme-btn svg:last-child { rotate: -90deg; }
+            .theme-btn.alt svg:first-child { rotate: 90deg; }
+            .theme-btn.alt svg:last-child { rotate: 0deg; }
+
+            .hl { transition: translate 220ms var(--ease-out), height 220ms var(--ease-out), opacity 150ms ease; }
+            .hl.instant { transition: opacity 150ms ease; }
+
+            .new-btn svg, #undoBtn svg, #redoBtn svg, .brand-mark svg, .search svg { transition: rotate 220ms var(--ease-out), scale 220ms var(--ease-out), color 150ms ease; }
+            .trash .lid { transform-box: fill-box; transform-origin: 100% 100%; transition: rotate 200ms var(--ease-out), translate 200ms var(--ease-out); }
+        }
+
+        /* sliding hover highlight shared by a list's rows */
+        .hl { position: absolute; top: 0; left: 0; right: 0; z-index: 0; border-radius: 8px; background: var(--hover); opacity: 0; pointer-events: none; }
+        .hl-on > .hl { opacity: 1; }
+        .nav, .note-list { position: relative; }
+        .nav-item, .note-list li:not(.hl) { position: relative; z-index: 1; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .swap svg { transition-property: opacity; }
+            .swap svg:last-child, .swap.alt svg:first-child, .swap.alt svg:last-child { scale: 1; filter: none; }
+        }
+
+        /* ---------- focus: chrome steps back while you type ---------- */
+        @media (hover: hover) and (pointer: fine) {
+            .toolbar, .meta, .pane-nav, .pane-list { transition: opacity 150ms ease-out; }
+            /* a gentle step back, slow enough that you barely notice it happen */
+            .app.typing .toolbar, .app.typing .meta { opacity: .45; transition-duration: 1200ms; }
+            .app.typing .pane-nav, .app.typing .pane-list { opacity: .7; transition-duration: 1200ms; }
         }
 
         /* ---------- hover (pointer devices only) ---------- */
         @media (hover: hover) and (pointer: fine) {
-            .nav-item:hover, .icon-btn:hover, .cat:hover, .back:hover { background: var(--hover); color: var(--text); }
-            .note-item:not(.active):hover { background: var(--hover); }
-            .note-item:hover::before, .note-item:hover + .note-item::before { border-color: transparent; }
-            .new-btn:hover { opacity: .88; }
-            .seg button:hover { color: var(--text); }
-            .filter-row button:not(.active):hover { background: var(--hover); }
-            .preview a:hover { text-decoration-color: var(--text); }
-            .check:hover { border-color: var(--text-2); }
+            .icon-btn:hover { background: var(--hover); color: var(--text); }
+            .nav-item:hover, .note-item:hover { color: var(--text); }
+            .nav-item:hover svg { color: var(--text); }
+            .cat:hover { border-color: var(--border-strong); color: var(--text); }
+            .new-btn:hover svg { rotate: 90deg; }
+            #undoBtn:not(:disabled):hover svg { rotate: -20deg; }
+            #redoBtn:not(:disabled):hover svg { rotate: 20deg; }
+            .brand:hover .brand-mark svg { rotate: -14deg; scale: 1.1; }
+            .trash-btn:hover .lid { rotate: -14deg; translate: 0 -1px; }
+            .search:hover:not(:focus-within) { border-color: var(--border-strong); }
+            .new-btn:hover { opacity: .85; }
+            .filter-row button:not([aria-current="true"]):hover { background: var(--hover); }
+            .prose a:hover { text-decoration-color: var(--text); }
+            .fmt button:hover { background: var(--hover); color: var(--text); }
+            .icon-btn:disabled:hover { background: none; color: var(--placeholder); }
+            .prose input[type="checkbox"]:hover { border-color: var(--text-2); }
+            .toast-close:hover { opacity: 1; }
+        }
+
+        @media (hover: none) {
+            .search kbd, [data-action="keys"] { display: none; }
         }
 
         /* ---------- responsive ---------- */
         @media (max-width: 1080px) {
-            .app { grid-template-columns: 300px 1fr; }
+            .app { grid-template-columns: 288px minmax(0, 1fr); }
             .pane-nav { display: none; }
             .filter-row { display: flex; }
             .list-tools { display: flex; }
         }
 
-        .list-tools { display: none; gap: 0; margin-right: -6px; }
-
         @media (max-width: 720px) {
-            .app { grid-template-columns: 1fr; }
-            .pane-list { border-right: none; }
+            .app, .app.sidebar-hidden { grid-template-columns: minmax(0, 1fr); }
+            .app.sidebar-hidden .pane-list { display: flex; }
+            .pane-list { border-inline-end: none; }
             .app.reading .pane-list { display: none; }
             .app:not(.reading) .editor { display: none; }
             .back { display: grid; }
-            .toolbar { padding: 10px 12px; }
-            .page { padding: 76px 20px 120px; }
-            .title-input { font-size: 34px; }
-            .cat input { width: 90px; }
+            .sidebar-btn { display: none; }
+            .page { padding: 24px 20px 40vh; }
+            .title-input { font-size: 1.75rem; }
             .status { display: none; }
+            /* 16px stops iOS zooming into focused fields */
+            .search input, .cat input { font-size: 1rem; }
+            .search { height: 36px; }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            .note-list.stagger .note-item { animation: none; }
-            .seg-ind { transition: none; }
-            .toast { transform: translate(-50%, 0); }
-            .press:active, .check:active { transform: none; }
+        @media (max-width: 380px) {
+            .new-btn .label { display: none; }
+            .new-btn { padding-inline: 7px; }
+            .toolbar { padding-inline: 4px; }
+            .toolbar .divider { margin: 0 2px; }
         }
 
-        @media (prefers-reduced-transparency: reduce) {
-            .toolbar { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+        /* ---------- phones: notch and home-bar safe areas ---------- */
+        @media (max-width: 720px) {
+            .pane-list .pane-head, .toolbar {
+                height: calc(52px + env(safe-area-inset-top));
+                padding-top: env(safe-area-inset-top);
+            }
+            .pane-list .pane-head { padding-inline: max(18px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right)); }
+            .search-wrap { padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right)); }
+            .note-list { padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right)); }
+            .list-tools { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+            .page { padding-inline: max(20px, env(safe-area-inset-left)) max(20px, env(safe-area-inset-right)); }
+            .menu-input, #linkInput { font-size: 1rem; }
+            .menu { width: min(15rem, calc(100vw - 16px)); }
+        }
+
+        /* ---------- touch: finger-sized targets ---------- */
+        @media (pointer: coarse) {
+            .icon-btn { width: 40px; height: 40px; }
+            .new-btn { height: 36px; }
+            .cat { height: 34px; }
+            .search { height: 40px; }
+            .filter-row button { height: 34px; padding: 0 14px; }
+            .nav-item { height: 40px; }
+            .note-item { padding-block: 12px 13px; }
+            .menu li { height: 44px; }
+            .fmt { max-width: calc(100vw - 16px); overflow-x: auto; scrollbar-width: none; }
+            .fmt::-webkit-scrollbar { display: none; }
+            .fmt button { width: 38px; height: 38px; flex: none; }
+            .prose ul[data-type="taskList"] > li > label { min-width: 24px; justify-content: center; }
+            .prose input[type="checkbox"] { width: 20px; height: 20px; }
         }
     </style>
 </head>
 
 <body>
+    <a class="skip" href="#editor">Skip to note</a>
+
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
         <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
         <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></symbol>
-        <symbol id="i-notes" viewBox="0 0 24 24"><path d="M6 3.5h8.5L19 8v12.5H6z" /><path d="M14 3.5V8h5M9.5 12.5h6M9.5 16h4" /></symbol>
+        <symbol id="i-notes" viewBox="0 0 24 24"><rect x="4.5" y="3.5" width="15" height="17" rx="2.5" /><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4" /></symbol>
         <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" /></symbol>
         <symbol id="i-hash" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16" /></symbol>
         <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l.8 12.5h9.4L17.5 7M9.5 7V4.5h5V7" /></symbol>
@@ -553,120 +797,172 @@
         <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" /></symbol>
         <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" /></symbol>
         <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 20h14" /></symbol>
+        <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" /><path d="M9.5 4.5v15" /></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></symbol>
+        <symbol id="i-pen" viewBox="0 0 24 24"><path d="M15.5 5.5 18.5 8.5M4.5 19.5l1-4L16 5a2.1 2.1 0 0 1 3 3L8.5 18.5z" /></symbol>
+        <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4.5 9.5 9 5" /><path d="M4.5 9.5h10a5 5 0 0 1 0 10H11" /></symbol>
+        <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 4.5-4.5L15 5" /><path d="M19.5 9.5h-10a5 5 0 0 0 0 10H13" /></symbol>
+        <symbol id="i-bold" viewBox="0 0 24 24"><path d="M7.5 5h5.25a3.5 3.5 0 0 1 0 7H7.5zM7.5 12h6.25a3.5 3.5 0 0 1 0 7H7.5z" stroke-width="2" /></symbol>
+        <symbol id="i-italic" viewBox="0 0 24 24"><path d="M10.5 5h7M6.5 19h7M14 5l-4 14" /></symbol>
+        <symbol id="i-strike" viewBox="0 0 24 24"><path d="M4.5 12h15M16 7.5c-.6-1.6-2.1-2.5-4-2.5-2.5 0-4 1.3-4 3 0 1.3.8 2.3 2.5 3M8 16.5c.6 1.6 2.1 2.5 4 2.5 2.5 0 4-1.3 4-3.2 0-.6-.1-1.1-.4-1.6" /></symbol>
+        <symbol id="i-code" viewBox="0 0 24 24"><path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4" /></symbol>
+        <symbol id="i-heading" viewBox="0 0 24 24"><path d="M6 5v14M18 5v14M6 12h12" /></symbol>
+        <symbol id="i-list" viewBox="0 0 24 24"><path d="M9.5 6.5h10M9.5 12h10M9.5 17.5h10" /><circle cx="5" cy="6.5" r=".75" fill="currentColor" /><circle cx="5" cy="12" r=".75" fill="currentColor" /><circle cx="5" cy="17.5" r=".75" fill="currentColor" /></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="7" height="7" rx="1.5" /><path d="m5.25 8 1.25 1.25L9 6.5M13.5 8h7M13.5 16.5h7" /><rect x="3.5" y="13" width="7" height="7" rx="1.5" /></symbol>
+        <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></symbol>
+        <symbol id="i-chev" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></symbol>
+        <symbol id="i-tick" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></symbol>
+        <symbol id="i-keys" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5" /><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8" /></symbol>
     </svg>
 
     <div class="app" id="app">
-        <aside class="pane-nav">
-            <div class="brand"><span class="brand-mark">n</span>Notes</div>
-            <nav class="nav" id="nav"></nav>
+        <aside class="pane-nav" aria-label="Filters">
+            <div class="pane-head brand"><span class="brand-mark" aria-hidden="true"><svg><use href="#i-pen" /></svg></span>Notes</div>
+            <nav class="nav" id="nav" aria-label="Note filters"></nav>
             <div class="nav-foot">
-                <button class="icon-btn press" data-action="export" title="Export notes (data.json)"><svg><use href="#i-down" /></svg></button>
-                <button class="icon-btn press" data-action="import" title="Import notes"><svg><use href="#i-up" /></svg></button>
+                <button class="icon-btn press" data-action="export" aria-label="Export notes" title="Export notes"><svg><use href="#i-down" /></svg></button>
+                <button class="icon-btn press" data-action="import" aria-label="Import notes" title="Import notes"><svg><use href="#i-up" /></svg></button>
                 <span class="spacer"></span>
-                <button class="icon-btn press" data-action="theme" title="Toggle theme"><svg><use class="theme-icon" href="#i-moon" /></svg></button>
+                <button class="icon-btn press" data-action="keys" aria-label="Keyboard shortcuts" title="Keyboard shortcuts"><svg><use href="#i-keys" /></svg></button>
+                <button class="icon-btn press swap theme-btn" data-action="theme" aria-label="Dark theme" title="Toggle theme"><svg><use href="#i-moon" /></svg><svg><use href="#i-sun" /></svg></button>
             </div>
         </aside>
 
-        <section class="pane-list">
-            <div class="list-head">
-                <div class="list-title-row">
-                    <h1 class="list-title" id="listTitle">All notes</h1>
-                    <div class="list-tools">
-                        <button class="icon-btn press" data-action="export" title="Export notes"><svg><use href="#i-down" /></svg></button>
-                        <button class="icon-btn press" data-action="import" title="Import notes"><svg><use href="#i-up" /></svg></button>
-                        <button class="icon-btn press" data-action="theme" title="Toggle theme"><svg><use class="theme-icon" href="#i-moon" /></svg></button>
-                    </div>
-                    <button class="new-btn press" data-action="new" title="New note"><svg><use href="#i-plus" /></svg>New</button>
-                </div>
-                <label class="search">
-                    <svg><use href="#i-search" /></svg>
-                    <input id="search" type="search" placeholder="Search" autocomplete="off" spellcheck="false">
-                    <kbd>Ctrl K</kbd>
-                </label>
-                <div class="filter-row" id="filterRow"></div>
+        <section class="pane-list" aria-labelledby="listTitle">
+            <div class="pane-head">
+                <h1 class="list-title" id="listTitle">All notes</h1>
+                <button class="new-btn press" data-action="new" aria-label="New note" title="New note"><svg aria-hidden="true"><use href="#i-plus" /></svg><span class="label">New</span></button>
             </div>
-            <ul class="note-list" id="list"></ul>
+            <div class="search-wrap">
+                <label class="search">
+                    <svg aria-hidden="true"><use href="#i-search" /></svg>
+                    <input id="search" type="search" placeholder="Search" aria-label="Search notes" autocomplete="off" spellcheck="false">
+                    <kbd aria-hidden="true">Ctrl K</kbd>
+                </label>
+                <div class="filter-row" id="filterRow" role="group" aria-label="Note filters"></div>
+            </div>
+            <ul class="note-list" id="list" aria-label="Notes"></ul>
+            <!-- shown when the filter sidebar is collapsed (narrower windows) -->
+            <div class="nav-foot list-tools">
+                <button class="icon-btn press" data-action="export" aria-label="Export notes" title="Export notes"><svg><use href="#i-down" /></svg></button>
+                <button class="icon-btn press" data-action="import" aria-label="Import notes" title="Import notes"><svg><use href="#i-up" /></svg></button>
+                <span class="spacer"></span>
+                <button class="icon-btn press" data-action="keys" aria-label="Keyboard shortcuts" title="Keyboard shortcuts"><svg><use href="#i-keys" /></svg></button>
+                <button class="icon-btn press swap theme-btn" data-action="theme" aria-label="Dark theme" title="Toggle theme"><svg><use href="#i-moon" /></svg><svg><use href="#i-sun" /></svg></button>
+            </div>
         </section>
 
-        <main class="editor" id="editor"></main>
+        <main class="editor" id="editor" tabindex="-1"></main>
     </div>
 
-    <datalist id="categories"></datalist>
+    <div class="fmt" id="fmt" role="toolbar" aria-label="Formatting"></div>
+
+    <div class="menu" id="catMenu">
+        <input class="menu-input" id="catSearch" role="combobox" aria-expanded="true" aria-controls="catList" aria-autocomplete="list" aria-label="Find or create a category" placeholder="Find or create…" spellcheck="false" autocomplete="off">
+        <ul id="catList" role="listbox" aria-label="Categories"></ul>
+    </div>
+
+    <dialog class="keys" id="keys" aria-labelledby="keysTitle">
+        <header><h2 id="keysTitle">Keyboard shortcuts</h2><button class="icon-btn press" data-action="keys-close" aria-label="Close">
+            <svg aria-hidden="true"><use href="#i-x" /></svg></button></header>
+        <section id="keysBody"></section>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
 
     <script>
         const STORAGE_KEY = 'kuruin-notebook-v1';
         const THEME_KEY = 'kuruin-notebook-theme';
+        const SIDEBAR_KEY = 'kuruin-notebook-sidebar';
         const DEFAULT_CATEGORIES = ['Websites', 'Skills', 'Ideas', 'General'];
         const ALL = 'All notes';
         const STARRED = 'Starred';
 
         const WELCOME = {
             id: 'n-welcome',
-            title: 'A quiet place for notes',
+            title: 'Welcome to Notes',
             category: 'General',
             starred: true,
             created: Date.now(),
             updated: Date.now(),
-            body: `Everything you write here saves on its own, as you type.
+            body: `Everything saves on its own as you type. While you write, the rest of the screen steps back. Move the mouse to bring it back.
 
-## Writing
-- **Bold**, *italic* and \`code\`
-- Paste a link and it becomes clickable: https://dribbble.com
-- Or name it: [Google Fonts](https://fonts.google.com)
+## Formatting as you type
+- Start a line with \`#\` or \`##\` for a heading
+- Start with \`-\` for a list, or \`[ ]\` for a checklist
+- Wrap words in \`**\` for **bold** or \`*\` for *italic*
+- Paste a link and it stays clickable: https://dribbble.com
 
-## Checklists
-- [ ] Learn Figma auto layout
-- [x] Set up this notebook
+## Try a checklist
+- [ ] Save a website I like
+- [x] Open my notes
 
-> Star a note to keep it at the top of the list.
-
-Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
+## Handy to know
+- Select any text to bold it, add a link or turn it into a list
+- **Ctrl Z** undoes, **Ctrl Shift Z** redoes
+- **Ctrl \\\\** hides the sidebar, **Ctrl K** searches
+- **Ctrl /** shows every shortcut`
         };
 
         let data;
         let currentId = null;
-        let editing = false;
         let query = '';
         let filter = ALL;
         let saveTimer = null;
+        let editor = null;          // TipTap instance for the open note
+        let syncTimer = null;
+        let lib = null;             // loaded editor modules, or false when unavailable
 
         const $ = (s) => document.querySelector(s);
         const $$ = (s) => document.querySelectorAll(s);
+        const app = $('#app');
         const uid = () => 'n-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
         const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        const icon = (name) => `<svg><use href="#i-${name}"/></svg>`;
+        const icon = (name) => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
         const current = () => data.notes.find((n) => n.id === currentId);
         const isNarrow = () => matchMedia('(max-width: 720px)').matches;
+        const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
+        const store = {
+            get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+            set: (k, v) => { try { localStorage.setItem(k, v); } catch { } }
+        };
 
         function fmtDate(t, long) {
             const d = new Date(t);
             const now = new Date();
-            if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            if (d.toDateString() === now.toDateString()) return long ? `today at ${time}` : time;
+            const y = new Date(now); y.setDate(now.getDate() - 1);
+            if (d.toDateString() === y.toDateString()) return long ? `yesterday at ${time}` : 'Yesterday';
             const opts = { day: 'numeric', month: 'short' };
             if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
-            if (long) Object.assign(opts, { hour: 'numeric', minute: '2-digit' });
-            return d.toLocaleString([], opts);
+            return d.toLocaleDateString([], opts) + (long ? ` at ${time}` : '');
         }
 
-        const wordCount = (s) => (s.match(/\S+/g) || []).length;
+        const wordCount = (s) => (s.match(/[\p{L}\p{N}]+/gu) || []).length;
+        const plainText = (md) => md
+            .replace(/^\s*[-*] \[( |x|X)\] /gm, '')
+            .replace(/^#+ |^> ?|^\s*[-*] |^\s*\d+\. /gm, '')
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .replace(/<?https?:\/\/(www\.)?([^\s>]+?)\/?>?(?=\s|$)/g, '$2')
+            .replace(/[*_`\\]/g, '');
+        const snippetOf = (md) => plainText(md).replace(/\s+/g, ' ').trim().slice(0, 140);
 
         // ---------- storage ----------
         function persist() {
-            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { }
+            store.set(STORAGE_KEY, JSON.stringify(data));
         }
 
+        // Quiet autosave: no status flicker while typing, one calm "Saved" after.
         function saveSoon() {
-            setStatus('Saving');
             clearTimeout(saveTimer);
-            saveTimer = setTimeout(() => { persist(); setStatus('Saved'); }, 400);
+            saveTimer = setTimeout(() => { persist(); setStatus('Saved'); }, 500);
         }
 
         async function load() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) return JSON.parse(saved);
-            } catch { }
+            const saved = store.get(STORAGE_KEY);
+            if (saved) { try { return JSON.parse(saved); } catch { } }
             try {
                 const res = await fetch('data.json', { cache: 'no-store' });
                 if (res.ok) return await res.json();
@@ -676,67 +972,78 @@ Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
 
         const isValid = (d) => d && Array.isArray(d.notes);
 
-        // ---------- markdown (small subset) ----------
-        function inline(s) {
-            const kept = [];
-            const keep = (html) => `\u0000${kept.push(html) - 1}\u0000`;
-            s = escapeHtml(s);
-            s = s.replace(/`([^`]+)`/g, (_, c) => keep(`<code>${c}</code>`));
-            s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, t, u) => keep(`<a href="${u}" target="_blank" rel="noopener">${t}</a>`));
-            s = s.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)'"]/g, (u) => keep(`<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\/(www\.)?/, '')}</a>`));
-            s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            s = s.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
-            return s.replace(/\u0000(\d+)\u0000/g, (_, i) => kept[i]);
+        // ---------- rich editor (TipTap, loaded once; falls back to a plain textarea) ----------
+        // Every package must share ONE copy of @tiptap/core and ProseMirror, or input rules
+        // (typing "## ", "- [ ] " …) silently attach to the wrong instance. `deps` pins them.
+        const EDITOR_VERSION = '2.27.3';
+        const PIN = `?deps=@tiptap/core@${EDITOR_VERSION},@tiptap/pm@${EDITOR_VERSION}`;
+        const esm = (pkg) => import(`https://esm.sh/${pkg}${PIN}`);
+        const loadLib = () => lib !== null ? Promise.resolve(lib) : Promise.race([
+            Promise.all([
+                esm(`@tiptap/core@${EDITOR_VERSION}`),
+                esm(`@tiptap/starter-kit@${EDITOR_VERSION}`),
+                esm(`@tiptap/extension-task-list@${EDITOR_VERSION}`),
+                esm(`@tiptap/extension-task-item@${EDITOR_VERSION}`),
+                esm(`@tiptap/extension-link@${EDITOR_VERSION}`),
+                esm(`@tiptap/extension-placeholder@${EDITOR_VERSION}`),
+                esm('tiptap-markdown@0.8.10')
+            ]).then(([core, starter, taskList, taskItem, link, placeholder, md]) => ({
+                Editor: core.Editor,
+                extensions: [
+                    starter.default.configure({ heading: { levels: [1, 2, 3] } }),
+                    taskList.default,
+                    taskItem.default.configure({
+                        nested: true,
+                        a11y: { checkboxLabel: (node, checked) => `${checked ? 'Uncheck' : 'Check'} “${node.textContent || 'item'}”` }
+                    }),
+                    link.default.configure({ autolink: true, openOnClick: false, linkOnPaste: true }),
+                    placeholder.default.configure({ placeholder: 'Start writing…' }),
+                    md.Markdown.configure({ html: false, linkify: true, tightLists: true, transformPastedText: true })
+                ]
+            })),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
+        ]).then((l) => (lib = l), () => (lib = false));
+
+        // A bullet list next to a checklist written with the same "-" marker reads back as ONE list
+        // (and grows a phantom empty checkbox on every reload). Bullets get "*", checklists keep "-",
+        // which markdown always treats as separate lists. Code blocks are left alone.
+        function splitLists(md) {
+            let inCode = false;
+            return md.split('\n').map((line) => {
+                if (/^\s*```/.test(line)) inCode = !inCode;
+                if (inCode) return line;
+                return line
+                    .replace(/^(\s*)[-*+] (?!\[[ xX]\]( |$))/, '$1* ')
+                    .replace(/^(\s*)[-*+] (\[[ xX]\]( |$))/, '$1- $2');
+            }).join('\n');
         }
 
-        function renderMarkdown(src) {
-            const lines = src.split('\n');
-            let html = '';
-            let list = null;
-            const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
-            const openList = (tag) => { if (list !== tag) { closeList(); html += `<${tag}>`; list = tag; } };
+        // Keep stored markdown tidy: tight checklists, bare links, unambiguous list markers.
+        const cleanMarkdown = (md) => splitLists(md)
+            .replace(/<(https?:\/\/[^>\s]+)>/g, '$1')
+            .replace(/^(\s*[-*] \[[ xX]\] .*)\n\n(?=\s*[-*] \[[ xX]\] )/gm, '$1\n')
+            .replace(/^(\s*[-*] \[[ xX]\] .*)\n\n(?=\s*[-*] \[[ xX]\] )/gm, '$1\n');
 
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                let m;
-                if (line.startsWith('```')) {
-                    closeList();
-                    const code = [];
-                    while (++i < lines.length && !lines[i].startsWith('```')) code.push(lines[i]);
-                    html += `<pre><code>${escapeHtml(code.join('\n'))}</code></pre>`;
-                } else if ((m = line.match(/^\s*[-*] \[( |x|X)\] ?(.*)$/))) {
-                    if (!m[2].trim()) continue;
-                    openList('ul');
-                    const done = m[1] !== ' ';
-                    html += `<li class="task${done ? ' done' : ''}"><label><input class="check" type="checkbox" data-line="${i}"${done ? ' checked' : ''}><span>${inline(m[2])}</span></label></li>`;
-                } else if ((m = line.match(/^\s*[-*] (.*)$/))) {
-                    if (!m[1].trim()) continue;
-                    openList('ul');
-                    html += `<li>${inline(m[1])}</li>`;
-                } else if ((m = line.match(/^\s*\d+\. (.*)$/))) {
-                    openList('ol');
-                    html += `<li>${inline(m[1])}</li>`;
-                } else if ((m = line.match(/^(#{1,3}) (.*)$/))) {
-                    closeList();
-                    html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`;
-                } else if ((m = line.match(/^> ?(.*)$/))) {
-                    closeList();
-                    html += `<blockquote>${inline(m[1])}</blockquote>`;
-                } else if (/^(-{3,}|\*{3,})$/.test(line.trim())) {
-                    closeList();
-                    html += '<hr>';
-                } else if (line.trim()) {
-                    closeList();
-                    html += `<p>${inline(line)}</p>`;
-                } else {
-                    closeList();
-                }
-            }
-            closeList();
-            return html || '<p class="placeholder">Nothing here yet. Switch to Write to start.</p>';
+        function syncFromEditor(n) {
+            clearTimeout(syncTimer);
+            syncTimer = null;
+            if (!editor || !n) return;
+            n.body = cleanMarkdown(editor.storage.markdown.getMarkdown());
+            edited(n);
         }
 
-        // ---------- sidebar ----------
+        function flushEditor() {
+            if (syncTimer) syncFromEditor(current());
+        }
+
+        function destroyEditor() {
+            flushEditor();
+            hideFmt();
+            closeCatMenu(false);
+            if (editor) { editor.destroy(); editor = null; }
+        }
+
+        // ---------- filters ----------
         function categories() {
             return [...new Set(data.notes.map((n) => n.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
         }
@@ -750,16 +1057,10 @@ Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
             return data.notes
                 .filter((n) => inFilter(n, filter))
                 .filter((n) => {
-                    const hay = `${n.title} ${n.body} ${n.category}`.toLowerCase();
+                    const hay = `${n.title} ${plainText(n.body)} ${n.category}`.toLowerCase();
                     return words.every((w) => hay.includes(w));
                 })
                 .sort((a, b) => (b.starred - a.starred) || (b.updated - a.updated));
-        }
-
-        function setFilter(f) {
-            filter = f;
-            renderNav();
-            renderList(true);
         }
 
         function renderNav() {
@@ -767,68 +1068,132 @@ Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
             if (filter !== ALL && filter !== STARRED && !cats.includes(filter)) filter = ALL;
 
             const count = (f) => data.notes.filter((n) => inFilter(n, f)).length;
-            const item = (f, ic) => `<button class="nav-item press${filter === f ? ' active' : ''}" data-filter="${escapeHtml(f)}">${icon(ic)}<span>${escapeHtml(f)}</span><i class="count">${count(f)}</i></button>`;
+            const item = (f, ic) => `<button class="nav-item press" data-filter="${escapeHtml(f)}" aria-current="${filter === f}">${icon(ic)}<span>${escapeHtml(f)}</span><i class="count" aria-label="${count(f)} notes">${count(f)}</i></button>`;
 
             $('#nav').innerHTML = item(ALL, 'notes') + item(STARRED, 'star')
-                + (cats.length ? `<div class="nav-label">Categories</div>` + cats.map((c) => item(c, 'hash')).join('') : '');
+                + (cats.length ? `<div class="nav-label" aria-hidden="true">Categories</div>` + cats.map((c) => item(c, 'hash')).join('') : '');
 
             $('#filterRow').innerHTML = [ALL, STARRED, ...cats]
-                .map((f) => `<button class="press${filter === f ? ' active' : ''}" data-filter="${escapeHtml(f)}">${escapeHtml(f === ALL ? 'All' : f)}</button>`).join('');
+                .map((f) => `<button class="press" data-filter="${escapeHtml(f)}" aria-current="${filter === f}">${escapeHtml(f === ALL ? 'All' : f)}</button>`).join('');
 
-            $('#listTitle').textContent = filter;
-            $('#categories').innerHTML = [...new Set([...DEFAULT_CATEGORIES, ...cats])].map((c) => `<option value="${escapeHtml(c)}">`).join('');
         }
 
-        document.addEventListener('click', (e) => {
-            const f = e.target.closest('[data-filter]');
-            if (f) setFilter(f.dataset.filter);
-        });
+        // ---------- list ----------
+        function itemHtml(n, i) {
+            const snippet = snippetOf(n.body);
+            return `<li style="--i:${Math.min(i, 8)}"><button class="note-item" data-id="${n.id}" aria-current="${n.id === currentId}">
+                <div class="t${n.title ? '' : ' untitled'}">${n.starred ? `<svg aria-label="Starred"><use href="#i-star"/></svg>` : ''}<span>${escapeHtml(n.title || 'Untitled')}</span></div>
+                ${snippet ? `<div class="s">${escapeHtml(snippet)}</div>` : ''}
+                <div class="m"><span>${fmtDate(n.updated)}</span>${n.category ? `<span>${escapeHtml(n.category)}</span>` : ''}</div>
+            </button></li>`;
+        }
 
-        function renderList(animate) {
+        function renderList(intro) {
             const el = $('#list');
             const notes = visibleNotes();
-            el.classList.toggle('stagger', !!animate);
+            el.classList.toggle('intro', !!intro);
+            // the entrance plays once; later row updates must not replay it
+            if (intro) setTimeout(() => el.classList.remove('intro'), 1200);
+
+            $('#listTitle').innerHTML = `${escapeHtml(filter)}<span class="n">${notes.length}</span>`;
 
             if (!notes.length) {
-                el.innerHTML = `<li class="list-empty">${query ? 'No notes match your search.' : data.notes.length ? 'No notes here yet.' : 'Your notebook is empty.<br>Create your first note.'}</li>`;
+                el.innerHTML = `<li class="list-empty">${query ? 'No notes match your search.' : data.notes.length ? 'No notes here yet.' : 'Your notebook is empty. Create your first note.'}</li>`;
                 return;
             }
+            el.innerHTML = notes.map(itemHtml).join('');
+        }
 
-            el.innerHTML = notes.map((n, i) => {
-                const snippet = n.body.replace(/^#+ |^> ?|\*|`|\[( |x|X)\] /gm, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim().slice(0, 140);
-                return `<li class="note-item${n.id === currentId ? ' active' : ''}" data-id="${n.id}" style="--i:${Math.min(i, 12)}">
-                    <div class="t${n.title ? '' : ' untitled'}">${n.starred ? icon('star') : ''}<span>${escapeHtml(n.title || 'Untitled')}</span></div>
-                    ${snippet ? `<div class="s">${escapeHtml(snippet)}</div>` : ''}
-                    <div class="m"><span>${fmtDate(n.updated)}</span>${n.category ? `<span>${escapeHtml(n.category)}</span>` : ''}</div>
-                </li>`;
-            }).join('');
+        // While typing, patch the open note's row in place instead of re-sorting the list,
+        // so nothing in the corner of your eye jumps around.
+        function patchListItem(n) {
+            const btn = $(`.note-item[data-id="${n.id}"]`);
+            if (btn) btn.parentElement.outerHTML = itemHtml(n, 0);
         }
 
         $('#list').addEventListener('click', (e) => {
             const item = e.target.closest('.note-item');
-            if (item) openNote(item.dataset.id);
+            if (item && item.dataset.id !== currentId) openNote(item.dataset.id);
+            else if (item && isNarrow()) openNote(item.dataset.id);
         });
 
-        // ---------- editor ----------
-        function setStatus(t) {
-            const s = $('#status');
-            if (s) s.textContent = t;
+        $('#list').addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+            const items = [...$$('.note-item')];
+            const i = items.indexOf(document.activeElement);
+            if (i < 0) return;
+            e.preventDefault();
+            items[Math.max(0, Math.min(items.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))].focus();
+        });
+
+        // ---------- focus mode ----------
+        // Only kicks in after ~2s of steady typing; a pause longer than 1.5s starts the count over,
+        // so a quick edit or a single word never makes the screen shift.
+        const FOCUS_AFTER = 2000;
+        const FOCUS_GAP = 1500;
+        let streakStart = 0;
+        let lastKeyAt = 0;
+
+        function setTyping(on) {
+            if (!on) {
+                streakStart = 0;
+                app.classList.remove('typing');
+                return;
+            }
+            const now = Date.now();
+            if (!streakStart || now - lastKeyAt > FOCUS_GAP) streakStart = now;
+            lastKeyAt = now;
+            if (now - streakStart >= FOCUS_AFTER) app.classList.add('typing');
         }
 
-        function openNote(id, startEditing) {
+        let lastPointer = null;
+        document.addEventListener('pointermove', (e) => {
+            if (!app.classList.contains('typing')) return;
+            // ignore the tiny jitter of a resting hand on a trackpad
+            if (lastPointer && Math.hypot(e.clientX - lastPointer.x, e.clientY - lastPointer.y) < 6) return;
+            if (!lastPointer) { lastPointer = { x: e.clientX, y: e.clientY }; return; }
+            lastPointer = null;
+            setTyping(false);
+        });
+
+        function toggleSidebar(force) {
+            const hidden = force ?? !app.classList.contains('sidebar-hidden');
+            app.classList.toggle('sidebar-hidden', hidden);
+            store.set(SIDEBAR_KEY, hidden ? 'hidden' : 'shown');
+            $$('.sidebar-btn').forEach((b) => {
+                b.setAttribute('aria-expanded', String(!hidden));
+                b.setAttribute('aria-label', hidden ? 'Show sidebar' : 'Hide sidebar');
+                b.title = (hidden ? 'Show sidebar' : 'Hide sidebar') + ' (Ctrl \\)';
+            });
+        }
+
+        // ---------- editor pane ----------
+        function setStatus(t) {
+            const s = $('#status');
+            if (!s) return;
+            s.textContent = t;
+            s.classList.remove('flash');
+            if (t) { void s.offsetWidth; s.classList.add('flash'); }
+        }
+
+        function openNote(id) {
+            destroyEditor();
             currentId = id;
-            const n = current();
-            editing = startEditing ?? !(n && n.body.trim());
-            $('#app').classList.toggle('reading', !!n);
+            app.classList.toggle('reading', !!current());
             renderEditor();
             renderList();
         }
 
         function closeNote() {
+            destroyEditor();
+            const id = currentId;
             currentId = null;
-            $('#app').classList.remove('reading');
+            app.classList.remove('reading');
+            setTyping(false);
             renderEditor();
             renderList();
+            const back = id && $(`.note-item[data-id="${id}"]`);
+            if (back) back.focus();
         }
 
         function renderEditor() {
@@ -836,135 +1201,452 @@ Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
             const n = current();
             if (!n) {
                 el.innerHTML = `<div class="empty">
-                    <h2>Nothing selected</h2>
-                    <p>Pick a note from the list, or start a new one.</p>
+                    <h2>No note open</h2>
+                    <p>Pick one from the list, or start fresh.</p>
                     <button class="new-btn press" data-action="new">${icon('plus')}New note</button>
                 </div>`;
                 return;
             }
 
+            const hidden = app.classList.contains('sidebar-hidden');
             el.innerHTML = `
                 <div class="toolbar">
-                    <button class="icon-btn back press" data-action="back" title="All notes">${icon('back')}</button>
-                    <label class="cat" title="Category">${icon('hash')}<input id="catInput" list="categories" placeholder="Category" value="${escapeHtml(n.category || '')}" spellcheck="false"></label>
+                    <button class="icon-btn back press" data-action="back" aria-label="Back to notes">${icon('back')}</button>
+                    <button class="icon-btn sidebar-btn press" data-action="sidebar" aria-expanded="${!hidden}" aria-label="${hidden ? 'Show' : 'Hide'} sidebar" title="${hidden ? 'Show' : 'Hide'} sidebar (Ctrl \\)">${icon('sidebar')}</button>
+                    <button class="cat press${n.category ? ' has-value' : ''}" id="catBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Category: ${escapeHtml(n.category || 'none')}">${icon('hash')}<span>${escapeHtml(n.category || 'Add category')}</span><svg class="chev" aria-hidden="true"><use href="#i-chev"/></svg></button>
                     <span class="spacer"></span>
-                    <span class="status" id="status"></span>
-                    <div class="seg" id="seg" data-mode="${editing ? 'write' : 'read'}">
-                        <span class="seg-ind"></span>
-                        <button class="press" data-mode="write" aria-pressed="${editing}">Write</button>
-                        <button class="press" data-mode="read" aria-pressed="${!editing}">Read</button>
-                    </div>
-                    <button class="icon-btn press${n.starred ? ' on' : ''}" id="starBtn" title="${n.starred ? 'Unstar' : 'Star'}">${icon('star')}</button>
-                    <button class="icon-btn press" id="deleteBtn" title="Delete note">${icon('trash')}</button>
+                    <span class="status" id="status" aria-hidden="true"></span>
+                    <button class="icon-btn press history-btn" id="undoBtn" aria-label="Undo" title="Undo (${MOD} Z)" disabled>${icon('undo')}</button>
+                    <button class="icon-btn press history-btn" id="redoBtn" aria-label="Redo" title="Redo (${MOD} Shift Z)" disabled>${icon('redo')}</button>
+                    <span class="divider history-btn" aria-hidden="true"></span>
+                    <button class="icon-btn press${n.starred ? ' on' : ''}" id="starBtn" aria-pressed="${!!n.starred}" aria-label="Star" title="Star">${icon('star')}</button>
+                    <button class="icon-btn press trash-btn" id="deleteBtn" aria-label="Delete note" title="Delete note"><svg class="trash" viewBox="0 0 24 24" aria-hidden="true"><g class="lid"><path d="M4.5 7h15M9.5 7V4.5h5V7" /></g><path d="M10 11v6M14 11v6M6.5 7l.8 12.5h9.4L17.5 7" /></svg></button>
                 </div>
-                <div class="page"><div class="page-inner">
-                    <textarea class="title-input" id="titleInput" rows="1" placeholder="Untitled">${escapeHtml(n.title)}</textarea>
-                    <div class="meta"><span id="metaEdited">Edited ${fmtDate(n.updated, true)}</span><span id="metaWords">${wordCount(n.body)} words</span></div>
+                <div class="page" id="page"><article class="page-inner">
+                    <h2><textarea class="title-input" id="titleInput" rows="1" placeholder="Untitled" aria-label="Title">${escapeHtml(n.title)}</textarea></h2>
+                    <div class="meta"><span id="metaEdited">Edited ${fmtDate(n.updated, true)}</span><span aria-hidden="true">·</span><span id="metaWords">${wordCount(plainText(n.body))} words</span></div>
                     <div id="bodyWrap"></div>
-                </div></div>`;
-
-            const touch = () => {
-                n.updated = Date.now();
-                $('#metaEdited').textContent = 'Edited ' + fmtDate(n.updated, true);
-                $('#metaWords').textContent = wordCount(n.body) + ' words';
-                saveSoon();
-                renderList();
-            };
+                </article></div>`;
 
             const title = $('#titleInput');
             const growTitle = () => { title.style.height = 'auto'; title.style.height = title.scrollHeight + 'px'; };
-            title.addEventListener('input', () => { n.title = title.value.replace(/\n/g, ' '); touch(); growTitle(); });
+            title.addEventListener('input', () => { n.title = title.value.replace(/\n/g, ' '); edited(n); growTitle(); setTyping(true); });
             title.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); if (editing) $('#bodyInput').focus(); }
+                if (e.key === 'Enter' || (e.key === 'ArrowDown' && title.selectionStart === title.value.length)) {
+                    e.preventDefault();
+                    focusBody('start');
+                }
             });
             requestAnimationFrame(growTitle);
 
-            $('#catInput').addEventListener('change', (e) => { n.category = e.target.value.trim(); touch(); renderNav(); });
-            $('#catInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+            $('#catBtn').onclick = (e) => (catMenu.classList.contains('show') ? closeCatMenu() : openCatMenu(e.currentTarget));
+
+            $('#undoBtn').onclick = () => editor && editor.chain().focus().undo().run();
+            $('#redoBtn').onclick = () => editor && editor.chain().focus().redo().run();
+            $('#page').addEventListener('scroll', () => { if (fmtEl.classList.contains('show')) placeFmt(); }, { passive: true });
 
             $('#starBtn').onclick = (e) => {
+                const b = e.currentTarget;
                 n.starred = !n.starred;
-                e.currentTarget.classList.toggle('on', n.starred);
-                e.currentTarget.title = n.starred ? 'Unstar' : 'Star';
+                b.classList.toggle('on', n.starred);
+                b.classList.remove('pop');
+                if (n.starred) { void b.offsetWidth; b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 500); }
+                b.setAttribute('aria-pressed', String(n.starred));
                 persist();
                 renderNav();
                 renderList();
             };
 
             $('#deleteBtn').onclick = () => {
+                destroyEditor();
                 const idx = data.notes.indexOf(n);
                 data.notes.splice(idx, 1);
                 persist();
                 closeNote();
                 renderNav();
+                renderList();
                 toast('Note deleted', 'Undo', () => {
                     data.notes.splice(idx, 0, n);
                     persist();
                     renderNav();
-                    openNote(n.id, false);
+                    openNote(n.id);
                 });
             };
 
-            $('#seg').addEventListener('click', (e) => {
-                const b = e.target.closest('[data-mode]');
-                if (b && (b.dataset.mode === 'write') !== editing) setMode(!editing, false);
+            // clicking the empty space below the text continues writing
+            $('#page').addEventListener('mousedown', (e) => {
+                if (e.target.id === 'page' || e.target.classList.contains('page-inner')) {
+                    e.preventDefault();
+                    focusBody('end');
+                }
             });
 
-            renderBody();
+            mountBody(n);
         }
 
-        function renderBody() {
-            const n = current();
+        async function mountBody(n) {
             const wrap = $('#bodyWrap');
-            const touch = () => {
-                n.updated = Date.now();
-                $('#metaEdited').textContent = 'Edited ' + fmtDate(n.updated, true);
-                $('#metaWords').textContent = wordCount(n.body) + ' words';
-                saveSoon();
-                renderList();
-            };
+            if (lib === null) {
+                // first visit: show the text quietly while the editor loads, instead of a blank page
+                wrap.innerHTML = `<div class="prose loading" aria-busy="true">${n.body.split('\n').filter((l) => l.trim()).map((l) => `<p>${escapeHtml(plainText(l))}</p>`).join('')}</div>`;
+            }
+            const l = await loadLib();
+            if (currentId !== n.id || !wrap.isConnected) return;
 
-            if (editing) {
-                wrap.innerHTML = `<textarea class="body-input" id="bodyInput" placeholder="Start writing…"></textarea>`;
+            if (l) {
+                wrap.innerHTML = '<div class="prose" id="prose"></div>';
+                editor = new l.Editor({
+                    element: $('#prose'),
+                    extensions: l.extensions,
+                    content: splitLists(n.body),
+                    editorProps: { attributes: { 'aria-label': 'Note', 'aria-multiline': 'true', role: 'textbox', spellcheck: 'true' } },
+                    onUpdate: () => {
+                        setTyping(true);
+                        clearTimeout(syncTimer);
+                        syncTimer = setTimeout(() => syncFromEditor(n), 250);
+                    }
+                });
+                // Ctrl/Cmd-click opens a link; a plain click places the cursor for editing
+                $('#prose').addEventListener('click', (e) => {
+                    const a = e.target.closest('a');
+                    if (a && (e.ctrlKey || e.metaKey)) window.open(a.href, '_blank', 'noopener');
+                });
+                editor.on('transaction', updateHistory);
+                editor.on('selectionUpdate', updateFmt);
+                editor.on('focus', updateFmt);
+                editor.on('blur', ({ event }) => { if (!event || !$('#fmt').contains(event.relatedTarget)) hideFmt(); });
+                updateHistory();
+            } else {
+                $$('.history-btn').forEach((b) => (b.hidden = true));
+                wrap.innerHTML = `<textarea class="body-input" id="bodyInput" placeholder="Start writing…" aria-label="Note"></textarea>`;
                 const body = $('#bodyInput');
                 body.value = n.body;
                 const grow = () => { body.style.height = 'auto'; body.style.height = body.scrollHeight + 'px'; };
-                body.addEventListener('input', () => { n.body = body.value; grow(); touch(); });
+                body.addEventListener('input', () => { n.body = body.value; grow(); edited(n); setTyping(true); });
                 body.addEventListener('keydown', continueList);
                 requestAnimationFrame(grow);
-            } else {
-                wrap.innerHTML = `<div class="preview" id="preview">${renderMarkdown(n.body)}</div>`;
-                const preview = $('#preview');
-                preview.addEventListener('change', (e) => {
-                    const i = e.target.dataset.line;
-                    if (i === undefined) return;
-                    const lines = n.body.split('\n');
-                    lines[i] = lines[i].replace(/\[( |x|X)\]/, e.target.checked ? '[x]' : '[ ]');
-                    n.body = lines.join('\n');
-                    touch();
-                    e.target.closest('li').classList.toggle('done', e.target.checked);
-                });
-                preview.addEventListener('dblclick', (e) => { if (!e.target.closest('a, input, label')) setMode(true, false); });
             }
+            if (pendingFocus) { focusBody(pendingFocus); pendingFocus = null; }
         }
 
-        // Switch write/read without rebuilding the toolbar. Keyboard toggles skip the animation.
-        function setMode(write, fromKeyboard) {
-            if (!current()) return;
-            editing = write;
-            const seg = $('#seg');
-            seg.classList.toggle('instant', fromKeyboard);
-            seg.dataset.mode = write ? 'write' : 'read';
-            seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.mode === 'write') === write)));
-            renderBody();
-            if (write) {
-                const body = $('#bodyInput');
-                body.focus();
-                body.setSelectionRange(body.value.length, body.value.length);
+        let pendingFocus = null;
+        function focusBody(where) {
+            if (editor) {
+                editor.view.dom.focus({ preventScroll: true }); // synchronous, so the next keystroke lands in the body
+                return editor.commands.focus(where);
             }
+            const body = $('#bodyInput');
+            if (!body) { pendingFocus = where; return; }
+            body.focus();
+            const pos = where === 'start' ? 0 : body.value.length;
+            body.setSelectionRange(pos, pos);
         }
 
-        // Pressing Enter on a list line starts the next item; Enter on an empty item ends the list.
+        // ---------- undo / redo ----------
+        function updateHistory() {
+            const u = $('#undoBtn'), r = $('#redoBtn');
+            if (!editor || !u) return;
+            u.disabled = !editor.can().undo();
+            r.disabled = !editor.can().redo();
+        }
+
+        // ---------- selection format bar ----------
+        const fmtEl = $('#fmt');
+        const FORMATS = [
+            { id: 'bold', icon: 'bold', label: 'Bold', keys: 'B', run: (c) => c.toggleBold() },
+            { id: 'italic', icon: 'italic', label: 'Italic', keys: 'I', run: (c) => c.toggleItalic() },
+            { id: 'strike', icon: 'strike', label: 'Strikethrough', keys: 'Shift S', run: (c) => c.toggleStrike() },
+            { id: 'code', icon: 'code', label: 'Code', keys: 'E', run: (c) => c.toggleCode() },
+            null,
+            { id: 'heading', icon: 'heading', label: 'Heading', keys: 'Alt 2', attrs: { level: 2 }, run: (c) => c.toggleHeading({ level: 2 }) },
+            { id: 'bulletList', icon: 'list', label: 'Bullet list', keys: 'Shift 8', run: (c) => c.toggleBulletList() },
+            { id: 'taskList', icon: 'check', label: 'Checklist', keys: 'Shift 9', run: (c) => c.toggleTaskList() },
+            null,
+            { id: 'link', icon: 'link', label: 'Link', run: null }
+        ];
+
+        function renderFmtButtons() {
+            fmtEl.innerHTML = FORMATS.map((f) => f
+                ? `<button class="press" data-fmt="${f.id}" aria-label="${f.label}" title="${f.label}${f.keys ? ` (${MOD} ${f.keys})` : ''}" aria-pressed="false">${icon(f.icon)}</button>`
+                : '<span class="divider" aria-hidden="true"></span>').join('');
+        }
+
+        function hideFmt() {
+            fmtEl.classList.remove('show');
+            delete fmtEl.dataset.mode;
+        }
+
+        function placeFmt() {
+            const { from, to } = editor.state.selection;
+            const a = editor.view.coordsAtPos(from), b = editor.view.coordsAtPos(to);
+            const w = fmtEl.offsetWidth, h = fmtEl.offsetHeight;
+            const mid = a.top === b.top ? (a.left + b.right) / 2 : a.left + w / 2;
+            // on touch the phone's own copy/paste menu sits above the selection, so go below it
+            const below = matchMedia('(pointer: coarse)').matches;
+            let top = below ? b.bottom + 12 : a.top - h - 8;
+            if (top < 8) top = b.bottom + 8; // no room above: sit below the selection
+            if (top + h > innerHeight - 8) top = a.top - h - 8;
+            fmtEl.style.left = Math.max(8, Math.min(innerWidth - w - 8, mid - w / 2)) + 'px';
+            fmtEl.style.top = top + 'px';
+        }
+
+        function updateFmt() {
+            if (!editor || fmtEl.dataset.mode === 'link') return;
+            const { empty } = editor.state.selection;
+            if (empty || !editor.isFocused || editor.state.selection.node) return hideFmt();
+            if (!fmtEl.querySelector('[data-fmt]')) renderFmtButtons();
+            FORMATS.forEach((f) => {
+                if (!f) return;
+                fmtEl.querySelector(`[data-fmt="${f.id}"]`).setAttribute('aria-pressed', String(editor.isActive(f.id, f.attrs)));
+            });
+            fmtEl.classList.add('show');
+            placeFmt();
+        }
+
+        function showLinkInput() {
+            const href = editor.getAttributes('link').href || '';
+            fmtEl.dataset.mode = 'link';
+            fmtEl.innerHTML = `<input id="linkInput" type="url" placeholder="Paste a link, then press Enter" aria-label="Link address" value="${escapeHtml(href)}" spellcheck="false" autocomplete="off">`
+                + (href ? `<button class="press" data-fmt="unlink" aria-label="Remove link" title="Remove link">${icon('x')}</button>` : '');
+            placeFmt();
+            const input = $('#linkInput');
+            input.focus();
+            input.select();
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    let url = input.value.trim();
+                    if (url && !/^[a-z]+:/i.test(url)) url = 'https://' + url;
+                    const chain = editor.chain().focus().extendMarkRange('link');
+                    (url ? chain.setLink({ href: url }) : chain.unsetLink()).run();
+                    closeLinkInput();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeLinkInput();
+                    editor.commands.focus();
+                }
+            });
+            input.addEventListener('blur', (e) => { if (!fmtEl.contains(e.relatedTarget)) { closeLinkInput(); hideFmt(); } });
+        }
+
+        function closeLinkInput() {
+            delete fmtEl.dataset.mode;
+            renderFmtButtons();
+            updateFmt();
+        }
+
+        // keep the text selection while pressing format buttons
+        fmtEl.addEventListener('mousedown', (e) => { if (e.target.closest('button')) e.preventDefault(); });
+        fmtEl.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-fmt]');
+            if (!b || !editor) return;
+            if (b.dataset.fmt === 'link') return showLinkInput();
+            if (b.dataset.fmt === 'unlink') {
+                editor.chain().focus().extendMarkRange('link').unsetLink().run();
+                return closeLinkInput();
+            }
+            FORMATS.find((f) => f && f.id === b.dataset.fmt).run(editor.chain().focus()).run();
+            updateFmt();
+        });
+
+        // Ctrl/Cmd+K inside the editor with text selected makes a link; elsewhere it searches.
+        function linkShortcut() {
+            if (!editor || !editor.isFocused || editor.state.selection.empty) return false;
+            updateFmt();
+            showLinkInput();
+            return true;
+        }
+
+        // ---------- category dropdown (combobox) ----------
+        const catMenu = $('#catMenu');
+        const catSearch = $('#catSearch');
+        let catOptions = [];
+        let catActive = 0;
+
+        function buildCatOptions() {
+            const n = current();
+            const q = catSearch.value.trim();
+            const all = [...new Set([...DEFAULT_CATEGORIES, ...categories()])].sort((a, b) => a.localeCompare(b));
+            const matches = all.filter((c) => c.toLowerCase().includes(q.toLowerCase()));
+            const opts = [];
+            if (q && !all.some((c) => c.toLowerCase() === q.toLowerCase())) opts.push({ type: 'create', value: q });
+            matches.forEach((c) => opts.push({ type: 'pick', value: c }));
+            if (n.category && !q) opts.push({ type: 'sep' }, { type: 'remove' });
+            return opts;
+        }
+
+        function renderCatMenu(keepActive) {
+            const n = current();
+            catOptions = buildCatOptions();
+            const selectable = catOptions.filter((o) => o.type !== 'sep');
+            if (!keepActive) {
+                const chosen = selectable.findIndex((o) => o.type === 'pick' && o.value === n.category);
+                catActive = catSearch.value.trim() ? 0 : Math.max(0, chosen);
+            }
+            catActive = Math.min(catActive, selectable.length - 1);
+
+            let i = -1;
+            $('#catList').innerHTML = catOptions.map((o) => {
+                if (o.type === 'sep') return '<li class="sep" role="separator"></li>';
+                i++;
+                const sel = i === catActive;
+                const label = o.type === 'create' ? `Create “${escapeHtml(o.value)}”` : o.type === 'remove' ? 'Remove category' : escapeHtml(o.value);
+                const ic = o.type === 'create' ? 'plus' : o.type === 'remove' ? 'x' : 'hash';
+                const chosen = o.type === 'pick' && o.value === n.category;
+                return `<li id="cat-opt-${i}" role="option" data-i="${i}" aria-selected="${sel}" class="${chosen ? 'chosen' : ''}${o.type === 'remove' ? ' danger' : ''}">${icon(ic)}<span>${label}</span>${o.type === 'pick' ? `<svg class="tick" aria-hidden="true"><use href="#i-tick"/></svg>` : ''}</li>`;
+            }).join('') || '<li class="menu-empty" role="presentation"><span>Type to create a category</span></li>';
+            catSearch.setAttribute('aria-activedescendant', selectable.length ? `cat-opt-${catActive}` : '');
+            const active = $(`#cat-opt-${catActive}`);
+            if (active) active.scrollIntoView({ block: 'nearest' });
+        }
+
+        function openCatMenu(trigger) {
+            hideFmt();
+            catSearch.value = '';
+            renderCatMenu();
+            const r = trigger.getBoundingClientRect();
+            catMenu.style.left = Math.min(r.left, innerWidth - catMenu.offsetWidth - 8) + 'px';
+            catMenu.style.top = r.bottom + 6 + 'px';
+            catMenu.classList.add('show');
+            trigger.setAttribute('aria-expanded', 'true');
+            catSearch.focus();
+        }
+
+        function closeCatMenu(refocus = true) {
+            if (!catMenu.classList.contains('show')) return;
+            catMenu.classList.remove('show');
+            const b = $('#catBtn');
+            if (b) { b.setAttribute('aria-expanded', 'false'); if (refocus) b.focus(); }
+        }
+
+        function chooseCat(i) {
+            const o = catOptions.filter((x) => x.type !== 'sep')[i];
+            const n = current();
+            if (!o || !n) return;
+            n.category = o.type === 'remove' ? '' : o.value;
+            const b = $('#catBtn');
+            b.classList.toggle('has-value', !!n.category);
+            b.querySelector('span').textContent = n.category || 'Add category';
+            b.setAttribute('aria-label', `Category: ${n.category || 'none'}`);
+            edited(n);
+            renderNav();
+            renderList();
+            closeCatMenu();
+        }
+
+        catSearch.addEventListener('input', () => renderCatMenu());
+        catSearch.addEventListener('keydown', (e) => {
+            const count = catOptions.filter((o) => o.type !== 'sep').length;
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!count) return;
+                catActive = (catActive + (e.key === 'ArrowDown' ? 1 : -1) + count) % count;
+                renderCatMenu(true);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                chooseCat(catActive);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeCatMenu();
+            } else if (e.key === 'Tab') {
+                closeCatMenu(false);
+            }
+        });
+
+        $('#catList').addEventListener('pointermove', (e) => {
+            const li = e.target.closest('[data-i]');
+            if (!li || +li.dataset.i === catActive) return;
+            $$('#catList [aria-selected="true"]').forEach((x) => x.setAttribute('aria-selected', 'false'));
+            li.setAttribute('aria-selected', 'true');
+            catActive = +li.dataset.i;
+            catSearch.setAttribute('aria-activedescendant', li.id);
+        });
+        $('#catList').addEventListener('mousedown', (e) => e.preventDefault());
+        $('#catList').addEventListener('click', (e) => {
+            const li = e.target.closest('[data-i]');
+            if (li) chooseCat(+li.dataset.i);
+        });
+
+        document.addEventListener('pointerdown', (e) => {
+            if (catMenu.classList.contains('show') && !catMenu.contains(e.target) && !e.target.closest('#catBtn')) closeCatMenu(false);
+        });
+        // popovers are placed against the old layout, so close them on resize / rotation
+        window.addEventListener('resize', () => { closeCatMenu(false); hideFmt(); });
+
+        // ---------- sliding hover highlight ----------
+        // One soft background glides between rows instead of each row flashing on and off.
+        function slidingHover(container, selector) {
+            if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+            let hl = null;
+            container.addEventListener('pointerover', (e) => {
+                const item = e.target.closest(selector);
+                if (!item || !container.contains(item)) return;
+                if (!hl || !hl.isConnected) {
+                    hl = document.createElement(container.tagName === 'UL' ? 'li' : 'div');
+                    hl.className = 'hl';
+                    hl.setAttribute('aria-hidden', 'true');
+                    container.prepend(hl);
+                }
+                const wasOn = container.classList.contains('hl-on');
+                hl.classList.toggle('instant', !wasOn);
+                // measure against the container itself (rows may sit inside their own positioned <li>)
+                const r = item.getBoundingClientRect(), c = container.getBoundingClientRect();
+                hl.style.translate = `${r.left - c.left - container.clientLeft + container.scrollLeft}px ${r.top - c.top - container.clientTop + container.scrollTop}px`;
+                hl.style.width = item.offsetWidth + 'px';
+                hl.style.height = item.offsetHeight + 'px';
+                hl.style.right = 'auto';
+                container.classList.add('hl-on');
+            });
+            container.addEventListener('pointerleave', () => container.classList.remove('hl-on'));
+        }
+
+        slidingHover($('#nav'), '.nav-item');
+        slidingHover($('#list'), '.note-item');
+
+        // ---------- keyboard shortcuts panel ----------
+        const SHORTCUTS = [
+            ['Editing', [
+                ['Undo', `${MOD} Z`], ['Redo', `${MOD} Shift Z`], ['Cut', `${MOD} X`], ['Copy', `${MOD} C`],
+                ['Paste', `${MOD} V`], ['Paste without formatting', `${MOD} Shift V`], ['Select all', `${MOD} A`]
+            ]],
+            ['Formatting', [
+                ['Bold', `${MOD} B`], ['Italic', `${MOD} I`], ['Strikethrough', `${MOD} Shift S`], ['Inline code', `${MOD} E`],
+                ['Link (with text selected)', `${MOD} K`], ['Heading 1, 2, 3', `${MOD} Alt 1–3`], ['Bullet list', `${MOD} Shift 8`],
+                ['Numbered list', `${MOD} Shift 7`], ['Checklist', `${MOD} Shift 9`], ['Indent / outdent list item', 'Tab | Shift Tab']
+            ]],
+            ['Notes', [
+                ['New note', `${MOD} Alt N`], ['Search', `${MOD} K`], ['Save now', `${MOD} S`], ['Hide sidebar', `${MOD} \\`],
+                ['Show controls while writing', 'Esc'], ['This panel', `${MOD} /`]
+            ]]
+        ];
+
+        const keyGroup = ([group, rows]) => `<div class="group"><h3>${group}</h3><dl>${rows.map(([what, keys]) =>
+            `<dt>${what}</dt><dd>${keys.split(' ').map((k) => (k === '|' ? '<span>or</span>' : `<kbd>${escapeHtml(k)}</kbd>`)).join('')}</dd>`).join('')}</dl></div>`;
+        // two columns: editing and notes on the left, formatting on the right
+        $('#keysBody').innerHTML = `<div class="col">${keyGroup(SHORTCUTS[0])}${keyGroup(SHORTCUTS[2])}</div><div class="col">${keyGroup(SHORTCUTS[1])}</div>`;
+
+        function toggleKeys() {
+            const d = $('#keys');
+            if (d.open) d.close();
+            else { setTyping(false); d.showModal(); }
+        }
+
+        $('#keys').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+
+        function edited(n) {
+            n.updated = Date.now();
+            const ed = $('#metaEdited');
+            if (ed && currentId === n.id) {
+                ed.textContent = 'Edited ' + fmtDate(n.updated, true);
+                $('#metaWords').textContent = wordCount(plainText(n.body)) + ' words';
+            }
+            setStatus('');
+            saveSoon();
+            patchListItem(n);
+            dismissToast();
+        }
+
+        // Fallback editor: Enter on a list line starts the next item; Enter on an empty item ends the list.
         function continueList(e) {
             if (e.key !== 'Enter' || e.shiftKey) return;
             const ta = e.target;
@@ -990,45 +1672,103 @@ Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
             query = '';
             $('#search').value = '';
             renderNav();
-            openNote(n.id, true);
+            openNote(n.id);
+            const row = $(`.note-item[data-id="${n.id}"]`);
+            if (row) row.parentElement.classList.add('new');
             $('#titleInput').focus();
         }
 
-        // ---------- toast ----------
-        let toastTimer;
+        // ---------- toast (Sonner) ----------
+        // Sonner is a React component, so it gets React from the same CDN, pinned to one copy.
+        // A toast with an action waits until it is used or dismissed; plain messages leave on their own.
+        let sonner = null;
+        const SONNER_PIN = '?deps=react@18.3.1,react-dom@18.3.1';
+
+        async function loadSonner() {
+            try {
+                const [React, ReactDOM, s] = await Promise.all([
+                    import(`https://esm.sh/react@18.3.1${SONNER_PIN}`),
+                    import(`https://esm.sh/react-dom@18.3.1/client${SONNER_PIN}`),
+                    import(`https://esm.sh/sonner@1.7.4${SONNER_PIN}`)
+                ]);
+                const host = document.createElement('div');
+                document.body.appendChild(host);
+                const root = ReactDOM.createRoot(host);
+                const render = () => root.render(React.createElement(s.Toaster, {
+                    position: 'bottom-center',
+                    theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
+                    gap: 8,
+                    offset: 24,
+                    toastOptions: {
+                        style: {
+                            fontFamily: 'var(--sans)',
+                            fontSize: '13px',
+                            borderRadius: '12px',
+                            padding: '12px 14px',
+                            background: 'var(--elevated)',
+                            color: 'var(--text)',
+                            border: '1px solid var(--border)',
+                            boxShadow: 'var(--shadow)'
+                        },
+                        actionButtonStyle: { background: 'var(--text)', color: 'var(--inverse)', borderRadius: '7px', fontWeight: 500, height: '26px', padding: '0 10px' }
+                    }
+                }));
+                render();
+                sonner = { toast: s.toast, render };
+            } catch {
+                sonner = false;
+            }
+        }
+
         function toast(message, actionLabel, onAction) {
-            $$('.toast').forEach((t) => t.remove());
+            if (sonner) {
+                sonner.toast(message, actionLabel
+                    ? { duration: Infinity, closeButton: true, action: { label: actionLabel, onClick: onAction } }
+                    : { duration: 4000 });
+                return;
+            }
+            fallbackToast(message, actionLabel, onAction);
+        }
+
+        function dismissToast() {
+            if (sonner) return sonner.toast.dismiss();
+            fallbackDismiss();
+        }
+
+        // Fallback when Sonner can't load (offline, CDN down).
+        let toastTimer;
+        const toastEl = $('#toast');
+
+        function fallbackToast(message, actionLabel, onAction) {
             clearTimeout(toastTimer);
-            const el = document.createElement('div');
-            el.className = 'toast';
-            el.setAttribute('role', 'status');
-            el.innerHTML = `<span>${escapeHtml(message)}</span>${actionLabel ? `<button class="press">${escapeHtml(actionLabel)}</button>` : ''}`;
-            document.body.appendChild(el);
-            el.offsetHeight; // commit the start state so the transition runs
-            el.classList.add('show');
+            toastEl.innerHTML = `<span>${escapeHtml(message)}</span>`
+                + (actionLabel ? `<button class="toast-action press">${escapeHtml(actionLabel)}</button><button class="toast-close press" aria-label="Dismiss">${icon('x')}</button>` : '');
+            toastEl.classList.add('show');
+            if (actionLabel) {
+                toastEl.querySelector('.toast-action').onclick = () => { fallbackDismiss(); onAction(); };
+                toastEl.querySelector('.toast-close').onclick = fallbackDismiss;
+            } else {
+                toastTimer = setTimeout(fallbackDismiss, 4000);
+            }
+        }
 
-            const dismiss = () => {
-                el.classList.add('hide');
-                el.classList.remove('show');
-                setTimeout(() => el.remove(), 200);
-            };
-            if (actionLabel) el.querySelector('button').onclick = () => { onAction(); dismiss(); };
-
-            // pause the timer while the tab is hidden or the pointer rests on the toast
-            let remaining = 5000, started = Date.now();
-            const run = () => { started = Date.now(); toastTimer = setTimeout(dismiss, remaining); };
-            const pause = () => { clearTimeout(toastTimer); remaining -= Date.now() - started; };
-            el.addEventListener('pointerenter', pause);
-            el.addEventListener('pointerleave', run);
-            run();
+        function fallbackDismiss() {
+            if (!toastEl.classList.contains('show')) return;
+            clearTimeout(toastTimer);
+            toastEl.classList.remove('show');
+            setTimeout(() => { if (!toastEl.classList.contains('show')) toastEl.textContent = ''; }, 200);
         }
 
         // ---------- actions ----------
         const actions = {
             new: newNote,
             back: closeNote,
+            sidebar: () => toggleSidebar(),
+            keys: toggleKeys,
+            'keys-close': () => $('#keys').close(),
             theme: () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'),
             export: () => {
+                flushEditor();
                 persist();
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const a = document.createElement('a');
@@ -1042,6 +1782,13 @@ Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
         };
 
         document.addEventListener('click', (e) => {
+            const f = e.target.closest('[data-filter]');
+            if (f) {
+                filter = f.dataset.filter;
+                renderNav();
+                renderList();
+                return;
+            }
             const b = e.target.closest('[data-action]');
             if (b && actions[b.dataset.action]) actions[b.dataset.action]();
         });
@@ -1053,52 +1800,88 @@ Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
             try {
                 const d = JSON.parse(await file.text());
                 if (!isValid(d)) throw new Error('bad format');
+                destroyEditor();
                 const previous = data;
                 data = d;
                 persist();
                 closeNote();
                 renderNav();
-                renderList(true);
+                renderList();
                 toast(`Imported ${d.notes.length} note${d.notes.length === 1 ? '' : 's'}`, 'Undo', () => {
                     data = previous;
                     persist();
                     renderNav();
-                    renderList(true);
+                    renderList();
                 });
             } catch {
-                toast('That file isn’t a notes export');
+                toast('That file isn’t a notes export. Choose a data.json you exported here.');
             }
         });
 
         $('#search').addEventListener('input', (e) => { query = e.target.value.trim().toLowerCase(); renderList(); });
         $('#search').addEventListener('keydown', (e) => {
             if (e.key === 'Escape') { e.target.value = ''; query = ''; renderList(); e.target.blur(); }
-            if (e.key === 'Enter') { const first = visibleNotes()[0]; if (first) openNote(first.id, false); }
+            if (e.key === 'Enter') { const first = visibleNotes()[0]; if (first) openNote(first.id); }
+            if (e.key === 'ArrowDown') { const first = $('.note-item'); if (first) { e.preventDefault(); first.focus(); } }
         });
 
         document.addEventListener('keydown', (e) => {
             const mod = e.ctrlKey || e.metaKey;
-            if (mod && e.key.toLowerCase() === 'e') { e.preventDefault(); if (current()) setMode(!editing, true); }
-            if (mod && e.key.toLowerCase() === 'k') {
+            const key = e.key.toLowerCase();
+            if (mod && key === 'k') {
                 e.preventDefault();
+                if (linkShortcut()) return;
                 if (isNarrow() && current()) closeNote();
+                if (app.classList.contains('sidebar-hidden')) toggleSidebar(false);
+                setTyping(false);
                 $('#search').focus();
                 $('#search').select();
             }
+            else if (mod && e.key === '\\') { e.preventDefault(); toggleSidebar(); }
+            else if (mod && e.key === '/') { e.preventDefault(); toggleKeys(); }
+            else if (mod && key === 's') {
+                e.preventDefault();
+                flushEditor();
+                clearTimeout(saveTimer);
+                persist();
+                setStatus('Saved');
+                if (!current()) toast('Saved');
+            }
+            else if (mod && e.altKey && e.code === 'KeyN') { e.preventDefault(); newNote(); }
+            else if (e.key === 'Escape' && app.classList.contains('typing')) setTyping(false);
         });
 
+        window.addEventListener('pagehide', flushEditor);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) { flushEditor(); persist(); } });
+
+        // Swap colors without every transition firing at once.
         function applyTheme(t) {
+            const freeze = document.createElement('style');
+            freeze.textContent = '*,*::before,*::after{transition:none!important}';
+            document.head.appendChild(freeze);
+
             document.documentElement.dataset.theme = t;
-            $$('.theme-icon').forEach((u) => u.setAttribute('href', t === 'dark' ? '#i-sun' : '#i-moon'));
-            $('meta[name="theme-color"]').content = t === 'dark' ? '#0b0b0c' : '#ffffff';
-            try { localStorage.setItem(THEME_KEY, t); } catch { }
+            $$('.theme-btn').forEach((b) => b.setAttribute('aria-label', t === 'dark' ? 'Light theme' : 'Dark theme'));
+            $('meta[name="theme-color"]').content = t === 'dark' ? '#0c0c0d' : '#ffffff';
+            store.set(THEME_KEY, t);
+            if (sonner) sonner.render(); // Sonner doesn't follow the page theme on its own
+
+            void document.body.offsetHeight;
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                freeze.remove();
+                // the icon swap is the one change that should animate
+                $$('.theme-btn').forEach((b) => b.classList.toggle('alt', t === 'dark'));
+            }));
         }
 
         // ---------- init ----------
         (async () => {
-            let theme = null;
-            try { theme = localStorage.getItem(THEME_KEY); } catch { }
-            applyTheme(theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+            const theme = store.get(THEME_KEY) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(theme);
+            if (store.get(SIDEBAR_KEY) === 'hidden') toggleSidebar(true);
+            $('.search kbd').textContent = `${MOD} K`;
+            loadLib();
+            loadSonner();
 
             const loaded = await load();
             data = isValid(loaded) ? loaded : { notes: [WELCOME] };
@@ -1106,12 +1889,9 @@ Press Ctrl E to switch between writing and reading, and Ctrl K to search.`
             const first = visibleNotes()[0];
             if (first && !isNarrow()) {
                 currentId = first.id;
-                editing = !first.body.trim();
-                $('#app').classList.add('reading');
-                renderEditor();
-            } else {
-                renderEditor();
+                app.classList.add('reading');
             }
+            renderEditor();
             renderList(true);
         })();
     </script>
