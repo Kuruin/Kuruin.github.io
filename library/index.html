@@ -203,11 +203,6 @@
         .add-hint { min-height: 18px; margin: 6px 4px 0; font-size: .75rem; color: var(--text-3); }
         .add-hint.error { color: var(--text); font-weight: 500; }
 
-        /* Visitors browse; editing needs the owner's sign-in. */
-        .lib.readonly .add, .lib.readonly .add-hint, .lib.readonly .card-actions, .lib.readonly .tip,
-        .lib.readonly #backupBtn, .lib.readonly [data-action="import"] { display: none; }
-        .lib.readonly .side-foot .spacer:first-of-type { display: none; }
-        .lib.readonly .wrap > .tags-row { margin-top: 0; }
         #accountBtn.on { color: var(--text); }
 
         .signin { width: min(360px, calc(100vw - 32px)); margin: auto; padding: 20px; border-radius: 14px; border: 1px solid var(--border); background: var(--elevated); color: var(--text); box-shadow: var(--shadow); }
@@ -513,7 +508,7 @@
                 <button class="backup-btn press" id="backupBtn" data-action="export"><svg aria-hidden="true"><use href="#i-down" /></svg><span id="backupLabel">Back up</span><i class="dot" aria-hidden="true"></i></button>
                 <span class="spacer"></span>
                 <button class="icon-btn press" data-action="import" aria-label="Restore from a backup" title="Restore from a backup"><svg aria-hidden="true"><use href="#i-up" /></svg></button>
-                <button class="icon-btn press" data-action="account" id="accountBtn" aria-label="Sign in to edit" title="Sign in to edit"><svg aria-hidden="true"><use href="#i-user" /></svg></button>
+                <button class="icon-btn press" data-action="account" id="accountBtn" aria-label="Changes save on this device · Sign in" title="Changes save on this device · Sign in"><svg aria-hidden="true"><use href="#i-user" /></svg></button>
                 <button class="icon-btn press" data-action="theme" id="themeBtn"><svg aria-hidden="true"><use href="#i-moon" /></svg></button>
             </div>
         </aside>
@@ -560,8 +555,8 @@
     <input type="file" id="importFile" accept="application/json,.json" hidden>
     <dialog class="signin" id="signin" aria-labelledby="signinTitle">
         <form id="signinForm" novalidate>
-            <h2 id="signinTitle">Sign in to edit</h2>
-            <p class="signin-intro" id="signinIntro">Anyone can browse this Library. Only its owner can add or change links.</p>
+            <h2 id="signinTitle">Sign in</h2>
+            <p class="signin-intro" id="signinIntro">Your changes already save on this device. Sign in as the Library’s owner to change the shared list everyone sees.</p>
             <label class="field"><span>Email</span><input class="input" id="siEmail" type="email" autocomplete="email" spellcheck="false" required></label>
             <label class="field"><span>Password</span><input class="input" id="siPass" type="password" autocomplete="current-password" minlength="8" required></label>
             <p class="field-error" id="siError" aria-live="polite"></p>
@@ -769,7 +764,7 @@
         // The browser keeps a copy for instant loading; Neon holds the real list (see "cloud" below).
         function persist(now) {
             clearTimeout(persistTimer);
-            const write = () => { store.set(KEY, JSON.stringify(db)); syncSoon(); };
+            const write = () => { store.set(KEY, JSON.stringify(db)); cloud.editor ? syncSoon() : saveLocal(); };
             if (now) write(); else persistTimer = setTimeout(write, 300);
         }
 
@@ -789,14 +784,17 @@
         }
 
         // ---------- cloud (Neon) ----------
-        // Everyone reads the links table through Neon's Data API. Writes need the owner's Neon Auth sign-in;
+        // Everyone reads the shared list through Neon's Data API. Only the owner's Neon Auth sign-in can change it;
         // the database itself refuses anyone else (row-level security), so these addresses are safe to publish.
+        // Everyone else can still add, edit and remove links: those changes stay on their device (see saveLocal).
         const NEON = {
             auth: 'https://ep-polished-breeze-b54oxqeh.neonauth.c-7.us-east-2.aws.neon.tech/neondb/auth',
             data: 'https://ep-polished-breeze-b54oxqeh.apirest.c-7.us-east-2.aws.neon.tech/neondb/rest/v1'
         };
-        const EDITOR_HINT_KEY = 'kuruin-library-editor'; // only picks the first paint; never grants anything
-        const cloud = { client: null, ready: false, editor: false, email: '', synced: new Map(), busy: false, again: false, warned: false };
+        const LOCAL_KEY = 'kuruin-library-local';
+        const LOCAL_TIP_KEY = 'kuruin-library-local-tip';
+        // loaded: the shared list arrived, so on-device changes can be worked out against it
+        const cloud = { client: null, ready: false, loaded: false, editor: false, email: '', synced: new Map(), busy: false, again: false, warned: false };
         let syncTimer = null;
 
         const toRow = (i) => ({ id: i.id, url: i.url, title: i.title, section: i.section, tags: i.tags, note: i.note, starred: i.starred, added: new Date(i.added).toISOString(), updated: new Date(i.updated).toISOString() });
@@ -806,13 +804,38 @@
         function setEditor(editor, email = '') {
             cloud.editor = editor;
             cloud.email = email;
-            store.set(EDITOR_HINT_KEY, editor ? '1' : '');
-            lib.classList.toggle('readonly', !editor);
             const b = $('#accountBtn');
-            const label = editor ? `Signed in as ${email}` : email ? `Signed in as ${email} · this account can’t edit` : 'Sign in to edit';
+            const label = editor ? `Signed in as ${email} · changes save to the cloud`
+                : email ? `Signed in as ${email} · changes save on this device`
+                    : 'Changes save on this device · Sign in';
             b.setAttribute('aria-label', label);
             b.title = label;
             b.classList.toggle('on', !!email);
+        }
+
+        // A visitor's own layer on top of the shared list: links they added, shared links they edited, and ones they removed.
+        function saveLocal() {
+            if (!cloud.loaded) return;
+            const ids = new Set(db.items.map((i) => i.id));
+            const added = [], edited = [];
+            db.items.forEach((i) => {
+                if (!cloud.synced.has(i.id)) added.push(i);
+                else if (snapshot(i) !== cloud.synced.get(i.id)) edited.push(i);
+            });
+            const hidden = [...cloud.synced.keys()].filter((id) => !ids.has(id));
+            store.set(LOCAL_KEY, JSON.stringify({ added, edited, hidden }));
+            if ((added.length || edited.length || hidden.length) && store.get(LOCAL_TIP_KEY) !== 'shown') {
+                store.set(LOCAL_TIP_KEY, 'shown');
+                setTimeout(() => toast('Your changes are saved on this device only. The shared Library stays as it is.'), 1200);
+            }
+        }
+
+        function applyLocal(shared) {
+            const mine = readJSON(LOCAL_KEY, {});
+            const list = (k) => (Array.isArray(mine[k]) ? mine[k] : []);
+            const edited = new Map(cleanItems(list('edited')).map((i) => [i.id, i]));
+            const hidden = new Set(list('hidden'));
+            return cleanItems([...shared.filter((i) => !hidden.has(i.id)).map((i) => edited.get(i.id) || i), ...list('added')]);
         }
 
         async function connectCloud() {
@@ -834,12 +857,14 @@
             setEditor(owner, email);
         }
 
-        // Replace the local copy with what's in Neon.
+        // Load the shared list from Neon; visitors see it with their own changes applied.
         async function pull() {
             const { data, error } = await cloud.client.from('links').select('*').limit(10000);
             if (error) throw error;
-            db = { items: cleanItems(data.map(fromRow)) };
-            cloud.synced = new Map(db.items.map((i) => [i.id, snapshot(i)]));
+            const shared = cleanItems(data.map(fromRow));
+            cloud.synced = new Map(shared.map((i) => [i.id, snapshot(i)]));
+            cloud.loaded = true;
+            db = { items: cloud.editor ? shared : applyLocal(shared) };
             store.set(KEY, JSON.stringify(db));
         }
 
@@ -876,10 +901,10 @@
         window.addEventListener('online', syncSoon);
 
         // Every change goes through here first.
+        // Changes are worked out against the shared list, so they wait until it has loaded.
         function canEdit() {
-            if (cloud.editor) return true;
-            if (!cloud.ready) toast('Still connecting. Try again in a moment.');
-            else toast(cloud.email ? 'This account can’t edit the Library' : 'Sign in to edit the Library', cloud.email ? {} : { action: { label: 'Sign in', onClick: openSignIn } });
+            if (cloud.loaded) return true;
+            toast(cloud.ready ? 'Couldn’t load the Library, so changes can’t be saved right now. Try reloading.' : 'Still loading. Try again in a moment.');
             return false;
         }
 
@@ -889,7 +914,7 @@
 
         function setSignInMode(create) {
             creating = create;
-            $('#signinTitle').textContent = create ? 'Create your account' : 'Sign in to edit';
+            $('#signinTitle').textContent = create ? 'Create your account' : 'Sign in';
             $('#siSubmit').textContent = create ? 'Create account' : 'Sign in';
             $('#siMode').textContent = create ? 'I have an account' : 'Create account';
             $('#siPass').autocomplete = create ? 'new-password' : 'current-password';
@@ -923,7 +948,7 @@
                 signin.close();
                 $('#siPass').value = '';
                 if (cloud.editor) { await pull(); render(); toast('Signed in. Changes now save to the cloud.'); }
-                else toast(creating ? 'Account created. It can edit once it’s set as the Library’s owner.' : 'Signed in, but this account can’t edit the Library');
+                else toast(creating ? 'Account created. Your changes keep saving on this device.' : 'Signed in. This account can’t change the shared Library, so changes keep saving on this device.');
             } catch (ex) {
                 err.textContent = navigator.onLine ? 'Couldn’t reach the sign-in service. Try again.' : 'You’re offline.';
             } finally { btn.disabled = false; }
@@ -933,6 +958,7 @@
             await sync();
             await cloud.client.auth.signOut();
             setEditor(false);
+            await pull().catch(() => { });
             render();
             toast('Signed out');
         }
@@ -1090,7 +1116,6 @@
                 return `<div class="empty"><h2>No links match ${what}</h2><p>Check the spelling, or search for a site’s address.</p><div class="actions"><button class="btn-ghost press" data-action="clear-filters">Clear ${query ? 'search' : 'tag'}</button></div></div>`;
             }
             if (!db.items.length && !cloud.ready) return `<div class="empty"><h2>Loading links…</h2></div>`;
-            if (!db.items.length && !cloud.editor) return `<div class="empty"><h2>No links yet</h2></div>`;
             if (!db.items.length) {
                 const how = matchMedia('(pointer: coarse)').matches
                     ? 'Paste a link in the bar above and tap Save. You can paste several at once.'
@@ -1109,8 +1134,8 @@
             const fresh = newIds.length <= 12 ? newIds : [];
             let n = 0;
             const ctx = {
-                draggable: cloud.editor && matchMedia('(pointer: fine)').matches,
-                triage: cloud.editor && filter === INBOX && !query,
+                draggable: matchMedia('(pointer: fine)').matches,
+                triage: filter === INBOX && !query,
                 cardOptions: filter === INBOX && !query ? sectionOptions('', { forCard: true }) : ''
             };
             el.innerHTML = items.length ? items.map((i) => cardHtml(i, fresh.includes(i.id) ? n++ : -1, ctx)).join('') : emptyHtml();
@@ -1795,7 +1820,7 @@
             import: () => { if (canEdit()) $('#importFile').click(); },
             account: () => {
                 if (!cloud.email) return openSignIn();
-                toast(cloud.editor ? `Signed in as ${cloud.email}` : `Signed in as ${cloud.email} · this account can’t edit`, { action: { label: 'Sign out', onClick: signOut } });
+                toast(cloud.editor ? `Signed in as ${cloud.email} · changes save to the cloud` : `Signed in as ${cloud.email} · changes save on this device`, { action: { label: 'Sign out', onClick: signOut } });
             },
             'signin-close': () => signin.close(),
             starters: () => {
@@ -1850,7 +1875,7 @@
             } else if (mod && e.key.toLowerCase() === 's') {
                 e.preventDefault();
                 persist(true);
-                toast(cloud.editor ? 'Saved' : 'Nothing to save. Sign in to edit.');
+                toast(cloud.editor ? 'Saved' : 'Saved on this device');
             }
         });
 
@@ -1867,7 +1892,6 @@
             applyTheme(document.documentElement.dataset.theme || 'light');
             $('#searchKbd').textContent = `${MOD} K`;
             loadSonner();
-            lib.classList.toggle('readonly', store.get(EDITOR_HINT_KEY) !== '1');
             db = await load();
             render();
             renderBackup();
