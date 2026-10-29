@@ -203,6 +203,27 @@
         .add-hint { min-height: 18px; margin: 6px 4px 0; font-size: .75rem; color: var(--text-3); }
         .add-hint.error { color: var(--text); font-weight: 500; }
 
+        /* Visitors browse; editing needs the owner's sign-in. */
+        .lib.readonly .add, .lib.readonly .add-hint, .lib.readonly .card-actions, .lib.readonly .tip,
+        .lib.readonly #backupBtn, .lib.readonly [data-action="import"] { display: none; }
+        .lib.readonly .side-foot .spacer:first-of-type { display: none; }
+        .lib.readonly .wrap > .tags-row { margin-top: 0; }
+        #accountBtn.on { color: var(--text); }
+
+        .signin { width: min(360px, calc(100vw - 32px)); margin: auto; padding: 20px; border-radius: 14px; border: 1px solid var(--border); background: var(--elevated); color: var(--text); box-shadow: var(--shadow); }
+        .signin::backdrop { background: rgba(0, 0, 0, .32); }
+        .signin form { display: flex; flex-direction: column; gap: 14px; }
+        .signin h2 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
+        .signin-intro { margin: -6px 0 2px; font-size: .8125rem; color: var(--text-2); line-height: 1.45; }
+        .signin .field-error:empty { display: none; }
+        .signin-foot { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+        .signin-foot .spacer { flex: 1; }
+        .signin .btn { height: 32px; padding: 0 14px; border-radius: 8px; background: var(--text); color: var(--inverse); font-weight: 500; font-size: .8125rem; }
+        .signin .btn:disabled { opacity: .6; }
+        .signin[open] { animation: signin-in 200ms var(--ease-out); }
+        @keyframes signin-in { from { opacity: 0; transform: scale(.97); } }
+        @media (prefers-reduced-motion: reduce) { .signin[open] { animation: none; } }
+
         /* tag filter row */
         .tags-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; }
         .tags-row:empty { display: none; }
@@ -474,6 +495,7 @@
         <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" /></symbol>
         <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 20h14" /></symbol>
         <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z" /></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5" /><path d="M5 19.5c1.2-3.2 3.8-5 7-5s5.8 1.8 7 5" /></symbol>
         <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" /></symbol>
     </svg>
 
@@ -491,6 +513,7 @@
                 <button class="backup-btn press" id="backupBtn" data-action="export"><svg aria-hidden="true"><use href="#i-down" /></svg><span id="backupLabel">Back up</span><i class="dot" aria-hidden="true"></i></button>
                 <span class="spacer"></span>
                 <button class="icon-btn press" data-action="import" aria-label="Restore from a backup" title="Restore from a backup"><svg aria-hidden="true"><use href="#i-up" /></svg></button>
+                <button class="icon-btn press" data-action="account" id="accountBtn" aria-label="Sign in to edit" title="Sign in to edit"><svg aria-hidden="true"><use href="#i-user" /></svg></button>
                 <button class="icon-btn press" data-action="theme" id="themeBtn"><svg aria-hidden="true"><use href="#i-moon" /></svg></button>
             </div>
         </aside>
@@ -535,6 +558,21 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <datalist id="tagList"></datalist>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <dialog class="signin" id="signin" aria-labelledby="signinTitle">
+        <form id="signinForm" novalidate>
+            <h2 id="signinTitle">Sign in to edit</h2>
+            <p class="signin-intro" id="signinIntro">Anyone can browse this Library. Only its owner can add or change links.</p>
+            <label class="field"><span>Email</span><input class="input" id="siEmail" type="email" autocomplete="email" spellcheck="false" required></label>
+            <label class="field"><span>Password</span><input class="input" id="siPass" type="password" autocomplete="current-password" minlength="8" required></label>
+            <p class="field-error" id="siError" aria-live="polite"></p>
+            <div class="signin-foot">
+                <button type="button" class="btn-quiet press" id="siMode">Create account</button>
+                <span class="spacer"></span>
+                <button type="button" class="btn-quiet press" data-action="signin-close">Cancel</button>
+                <button type="submit" class="btn press" id="siSubmit">Sign in</button>
+            </div>
+        </form>
+    </dialog>
 
     <script>
         const KEY = 'kuruin-library-v1';
@@ -728,9 +766,10 @@
             });
         }
 
+        // The browser keeps a copy for instant loading; Neon holds the real list (see "cloud" below).
         function persist(now) {
             clearTimeout(persistTimer);
-            const write = () => store.set(KEY, JSON.stringify(db));
+            const write = () => { store.set(KEY, JSON.stringify(db)); syncSoon(); };
             if (now) write(); else persistTimer = setTimeout(write, 300);
         }
 
@@ -746,11 +785,156 @@
         async function load() {
             const saved = readJSON(KEY, null);
             if (saved && Array.isArray(saved.items)) return { items: cleanItems(saved.items) };
-            try {
-                const res = await fetch('data.json', { cache: 'no-store' });
-                if (res.ok) { const d = await res.json(); return { items: cleanItems(d.items) }; }
-            } catch { }
             return { items: [] };
+        }
+
+        // ---------- cloud (Neon) ----------
+        // Everyone reads the links table through Neon's Data API. Writes need the owner's Neon Auth sign-in;
+        // the database itself refuses anyone else (row-level security), so these addresses are safe to publish.
+        const NEON = {
+            auth: 'https://ep-polished-breeze-b54oxqeh.neonauth.c-7.us-east-2.aws.neon.tech/neondb/auth',
+            data: 'https://ep-polished-breeze-b54oxqeh.apirest.c-7.us-east-2.aws.neon.tech/neondb/rest/v1'
+        };
+        const EDITOR_HINT_KEY = 'kuruin-library-editor'; // only picks the first paint; never grants anything
+        const cloud = { client: null, ready: false, editor: false, email: '', synced: new Map(), busy: false, again: false, warned: false };
+        let syncTimer = null;
+
+        const toRow = (i) => ({ id: i.id, url: i.url, title: i.title, section: i.section, tags: i.tags, note: i.note, starred: i.starred, added: new Date(i.added).toISOString(), updated: new Date(i.updated).toISOString() });
+        const fromRow = (r) => ({ ...r, added: Date.parse(r.added), updated: Date.parse(r.updated) });
+        const snapshot = (i) => JSON.stringify(toRow(i));
+
+        function setEditor(editor, email = '') {
+            cloud.editor = editor;
+            cloud.email = email;
+            store.set(EDITOR_HINT_KEY, editor ? '1' : '');
+            lib.classList.toggle('readonly', !editor);
+            const b = $('#accountBtn');
+            const label = editor ? `Signed in as ${email}` : email ? `Signed in as ${email} · this account can’t edit` : 'Sign in to edit';
+            b.setAttribute('aria-label', label);
+            b.title = label;
+            b.classList.toggle('on', !!email);
+        }
+
+        async function connectCloud() {
+            const { createClient } = await import('https://esm.sh/@neondatabase/neon-js@0.9.0-beta');
+            cloud.client = createClient({ auth: { url: NEON.auth, allowAnonymous: true }, dataApi: { url: NEON.data } });
+            await checkAccount();
+            await pull();
+            cloud.ready = true;
+        }
+
+        async function checkAccount() {
+            const { data } = await cloud.client.auth.getSession();
+            const email = data?.user?.email || '';
+            let owner = false;
+            if (email) {
+                const r = await cloud.client.rpc('is_library_owner');
+                owner = r.data === true;
+            }
+            setEditor(owner, email);
+        }
+
+        // Replace the local copy with what's in Neon.
+        async function pull() {
+            const { data, error } = await cloud.client.from('links').select('*').limit(10000);
+            if (error) throw error;
+            db = { items: cleanItems(data.map(fromRow)) };
+            cloud.synced = new Map(db.items.map((i) => [i.id, snapshot(i)]));
+            store.set(KEY, JSON.stringify(db));
+        }
+
+        function syncSoon() {
+            clearTimeout(syncTimer);
+            if (cloud.editor) syncTimer = setTimeout(sync, 500);
+        }
+
+        // Send only what changed since the last save: new or edited links, then removed ones.
+        async function sync() {
+            if (!cloud.editor) return;
+            if (cloud.busy) { cloud.again = true; return; }
+            cloud.busy = true;
+            const now = new Map(db.items.map((i) => [i.id, snapshot(i)]));
+            const changed = db.items.filter((i) => now.get(i.id) !== cloud.synced.get(i.id));
+            const removed = [...cloud.synced.keys()].filter((id) => !now.has(id));
+            try {
+                // deletes first, so a link removed and pasted again doesn't clash with its old row
+                if (removed.length) { const r = await cloud.client.from('links').delete().in('id', removed); if (r.error) throw r.error; }
+                if (changed.length) { const r = await cloud.client.from('links').upsert(changed.map(toRow)); if (r.error) throw r.error; }
+                removed.forEach((id) => cloud.synced.delete(id));
+                changed.forEach((i) => cloud.synced.set(i.id, now.get(i.id)));
+                cloud.warned = false;
+            } catch (err) {
+                // kept in this browser; the next change or reconnect tries again
+                if (!cloud.warned) toast(navigator.onLine ? 'Couldn’t save to the cloud. Your changes are kept here and will retry.' : 'You’re offline. Changes are kept here and save when you reconnect.');
+                cloud.warned = true;
+                if (/jwt|auth|401|403/i.test(String(err?.message || err?.code))) checkAccount().catch(() => { });
+            } finally {
+                cloud.busy = false;
+                if (cloud.again) { cloud.again = false; syncSoon(); }
+            }
+        }
+        window.addEventListener('online', syncSoon);
+
+        // Every change goes through here first.
+        function canEdit() {
+            if (cloud.editor) return true;
+            if (!cloud.ready) toast('Still connecting. Try again in a moment.');
+            else toast(cloud.email ? 'This account can’t edit the Library' : 'Sign in to edit the Library', cloud.email ? {} : { action: { label: 'Sign in', onClick: openSignIn } });
+            return false;
+        }
+
+        // ---------- sign in ----------
+        const signin = $('#signin');
+        let creating = false;
+
+        function setSignInMode(create) {
+            creating = create;
+            $('#signinTitle').textContent = create ? 'Create your account' : 'Sign in to edit';
+            $('#siSubmit').textContent = create ? 'Create account' : 'Sign in';
+            $('#siMode').textContent = create ? 'I have an account' : 'Create account';
+            $('#siPass').autocomplete = create ? 'new-password' : 'current-password';
+            $('#siError').textContent = '';
+        }
+
+        function openSignIn() {
+            if (!cloud.client) { toast('Still connecting. Try again in a moment.'); return; }
+            setSignInMode(false);
+            signin.showModal();
+            $('#siEmail').focus();
+        }
+
+        $('#siMode').addEventListener('click', () => setSignInMode(!creating));
+        $('#signinForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = $('#siEmail').value.trim();
+            const password = $('#siPass').value;
+            const err = $('#siError');
+            if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = 'Enter your email address.'; $('#siEmail').focus(); return; }
+            if (password.length < 8) { err.textContent = 'Passwords are at least 8 characters.'; $('#siPass').focus(); return; }
+            err.textContent = '';
+            const btn = $('#siSubmit');
+            btn.disabled = true;
+            try {
+                const r = creating
+                    ? await cloud.client.auth.signUp.email({ email, password, name: email.split('@')[0] })
+                    : await cloud.client.auth.signIn.email({ email, password });
+                if (r?.error) { err.textContent = r.error.message || 'That didn’t work. Check your email and password.'; return; }
+                await checkAccount();
+                signin.close();
+                $('#siPass').value = '';
+                if (cloud.editor) { await pull(); render(); toast('Signed in. Changes now save to the cloud.'); }
+                else toast(creating ? 'Account created. It can edit once it’s set as the Library’s owner.' : 'Signed in, but this account can’t edit the Library');
+            } catch (ex) {
+                err.textContent = navigator.onLine ? 'Couldn’t reach the sign-in service. Try again.' : 'You’re offline.';
+            } finally { btn.disabled = false; }
+        });
+
+        async function signOut() {
+            await sync();
+            await cloud.client.auth.signOut();
+            setEditor(false);
+            render();
+            toast('Signed out');
         }
 
         // ---------- queries ----------
@@ -905,6 +1089,8 @@
                 const what = query ? `“${esc(query)}”` : `#${esc(tagFilter)}`;
                 return `<div class="empty"><h2>No links match ${what}</h2><p>Check the spelling, or search for a site’s address.</p><div class="actions"><button class="btn-ghost press" data-action="clear-filters">Clear ${query ? 'search' : 'tag'}</button></div></div>`;
             }
+            if (!db.items.length && !cloud.ready) return `<div class="empty"><h2>Loading links…</h2></div>`;
+            if (!db.items.length && !cloud.editor) return `<div class="empty"><h2>No links yet</h2></div>`;
             if (!db.items.length) {
                 const how = matchMedia('(pointer: coarse)').matches
                     ? 'Paste a link in the bar above and tap Save. You can paste several at once.'
@@ -923,8 +1109,8 @@
             const fresh = newIds.length <= 12 ? newIds : [];
             let n = 0;
             const ctx = {
-                draggable: matchMedia('(pointer: fine)').matches,
-                triage: filter === INBOX && !query,
+                draggable: cloud.editor && matchMedia('(pointer: fine)').matches,
+                triage: cloud.editor && filter === INBOX && !query,
                 cardOptions: filter === INBOX && !query ? sectionOptions('', { forCard: true }) : ''
             };
             el.innerHTML = items.length ? items.map((i) => cardHtml(i, fresh.includes(i.id) ? n++ : -1, ctx)).join('') : emptyHtml();
@@ -1007,6 +1193,7 @@
         }
 
         function addLinks(text, opts = {}) {
+            if (!canEdit()) return 0;
             const urls = [...new Set(extractUrls(text))];
             if (!urls.length) {
                 setAddError('No link found. Paste a web address, like lucide.dev');
@@ -1104,6 +1291,7 @@
         const find = (id) => db.items.find((i) => i.id === id);
 
         function toggleStar(id, btn, { quiet = false } = {}) {
+            if (!canEdit()) return;
             const item = find(id);
             item.starred = !item.starred;
             item.updated = Date.now();
@@ -1126,7 +1314,7 @@
 
         function moveItem(id, section, { quiet = false } = {}) {
             const item = find(id);
-            if (!item || item.section === section) return;
+            if (!item || item.section === section || !canEdit()) return;
             const before = item.section;
             item.section = section;
             item.updated = Date.now();
@@ -1149,7 +1337,7 @@
 
         function deleteItem(id, { animate = true } = {}) {
             const idx = db.items.findIndex((i) => i.id === id);
-            if (idx < 0) return;
+            if (idx < 0 || !canEdit()) return;
             // keyboard deletes move focus to the next card, so you can keep going
             const cards = [...$$('#results .card')];
             const pos = cards.findIndex((c) => c.dataset.id === id);
@@ -1365,6 +1553,7 @@
         }
 
         function openDrawer(id, returnTo, focusSel = '#fTitle') {
+            if (!canEdit()) return;
             editingId = id;
             drawerReturn = returnTo || document.activeElement;
             renderDrawer();
@@ -1603,8 +1792,14 @@
                 renderBackup();
                 toast(`Backup downloaded · ${plural(db.items.length, 'link')}`);
             },
-            import: () => $('#importFile').click(),
+            import: () => { if (canEdit()) $('#importFile').click(); },
+            account: () => {
+                if (!cloud.email) return openSignIn();
+                toast(cloud.editor ? `Signed in as ${cloud.email}` : `Signed in as ${cloud.email} · this account can’t edit`, { action: { label: 'Sign out', onClick: signOut } });
+            },
+            'signin-close': () => signin.close(),
             starters: () => {
+                if (!canEdit()) return;
                 STARTERS.forEach(([url, section, tags]) => addLinks(url, { section, tags, silent: true }));
                 render(db.items.map((i) => i.id));
                 toast(`Added ${plural(STARTERS.length, 'starter link')}`);
@@ -1655,7 +1850,7 @@
             } else if (mod && e.key.toLowerCase() === 's') {
                 e.preventDefault();
                 persist(true);
-                toast('Saved in this browser');
+                toast(cloud.editor ? 'Saved' : 'Nothing to save. Sign in to edit.');
             }
         });
 
@@ -1672,9 +1867,18 @@
             applyTheme(document.documentElement.dataset.theme || 'light');
             $('#searchKbd').textContent = `${MOD} K`;
             loadSonner();
+            lib.classList.toggle('readonly', store.get(EDITOR_HINT_KEY) !== '1');
             db = await load();
             render();
             renderBackup();
+            try {
+                await connectCloud();
+                render();
+            } catch {
+                cloud.ready = true;
+                setEditor(false);
+                toast(navigator.onLine ? 'Couldn’t load the latest links. Showing the copy saved in this browser.' : 'You’re offline. Showing the copy saved in this browser.');
+            }
 
             // ?add=<url>&title=<page title>: sent by the bookmarklet (or a share sheet as ?text=)
             const params = new URLSearchParams(location.search);
