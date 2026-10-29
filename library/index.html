@@ -1895,13 +1895,16 @@
             db = await load();
             render();
             renderBackup();
+            // Don't sit on "Loading" forever: after 15s show the saved copy, and still update if Neon answers late.
+            const connecting = connectCloud();
             try {
-                await connectCloud();
+                await Promise.race([connecting, new Promise((_, fail) => setTimeout(() => fail(new Error('timeout')), 15000))]);
                 render();
             } catch {
                 cloud.ready = true;
-                setEditor(false);
+                render();
                 toast(navigator.onLine ? 'Couldn’t load the latest links. Showing the copy saved in this browser.' : 'You’re offline. Showing the copy saved in this browser.');
+                connecting.then(() => render(), () => { });
             }
 
             // ?add=<url>&title=<page title>: sent by the bookmarklet (or a share sheet as ?text=)
